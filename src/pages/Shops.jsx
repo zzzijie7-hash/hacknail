@@ -67,12 +67,11 @@ export default function Shops({ onBack, onChat, nailData }) {
   const filteredShops = activeFilter === '全部' ? shops : shops.filter(s => s.tag.includes(activeFilter))
 
   return (
-    <div className="min-h-screen bg-white" style={{ fontFamily: "-apple-system, 'PingFang SC', sans-serif" }}>
-      {/* 状态栏 */}
-      <div className="h-[44px] bg-white" />
+    <div className="min-h-screen bg-[#FAFAFA] relative overflow-x-hidden flex flex-col items-center" style={{ fontFamily: "-apple-system, 'PingFang SC', sans-serif" }}>
+      <div className="w-full max-w-[375px] min-h-screen bg-white relative">
 
-      {/* 顶栏 y≈50: 搜索栏 w=273 h=32 rx=16 */}
-      <div className="px-[16px] flex items-center h-[44px] gap-[10px]">
+      {/* 顶栏 */}
+      <div className="px-[16px] flex items-center h-[44px] gap-[10px] sticky top-0 bg-white z-20">
         <button onClick={onBack}>
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#222" strokeWidth="2.5" strokeLinecap="round">
             <polyline points="15 18 9 12 15 6"/>
@@ -86,7 +85,7 @@ export default function Shops({ onBack, onChat, nailData }) {
         </div>
       </div>
 
-      {/* 筛选标签: y=140 h=28 rx=6, #303034/5% */}
+      {/* 筛选标签 */}
       <div className="px-[16px] py-[8px] flex gap-[8px] overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
         {TAG_FILTERS.map((tag) => (
           <button key={tag.label} onClick={() => setActiveFilter(tag.label)}
@@ -111,11 +110,9 @@ export default function Shops({ onBack, onChat, nailData }) {
           </div>
         ) : filteredShops.map((shop) => (
           <div key={shop.id} className="px-[16px] py-[16px] flex gap-[12px] border-b border-[#f5f5f5]">
-            {/* 头像: 88x88 rx=4 */}
             <div className="w-[88px] h-[88px] rounded-[4px] bg-[#f5f5f5] flex items-center justify-center text-[36px] shrink-0">
               {shop.avatar}
             </div>
-            {/* 信息 */}
             <div className="flex-1 min-w-0 flex flex-col justify-between py-[2px]">
               <div className="flex items-center gap-[6px]">
                 <span className="text-[#222] text-[16px] font-medium truncate">{shop.name}</span>
@@ -128,7 +125,6 @@ export default function Shops({ onBack, onChat, nailData }) {
                 <span className="text-[#7C5CFC] text-[12px]">{formatDistance(shop.distance)}</span>
               </div>
               <p className="text-[#999] text-[12px] truncate">{shop.address}</p>
-              {/* 私信按钮: h=20 rx=10 */}
               <div className="flex justify-end">
                 <button onClick={() => onChat(shop)}
                   className="px-[12px] h-[20px] rounded-[10px] bg-[#FF2442] text-white text-[12px] font-medium flex items-center">
@@ -138,6 +134,8 @@ export default function Shops({ onBack, onChat, nailData }) {
             </div>
           </div>
         ))}
+      </div>
+
       </div>
     </div>
   )

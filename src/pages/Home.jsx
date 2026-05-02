@@ -80,8 +80,8 @@ function NailLibrary({ selected, onSelect }) {
     <div>
       {/* 标题栏 */}
       <div className="flex items-center justify-between mb-3">
-        <h2 className="text-white font-semibold text-base">美甲库</h2>
-        <span className="text-gray-600 text-xs">{nails.length} 款 · {groupList.length} 组</span>
+        <h2 className="text-[#222] font-semibold text-base">美甲库</h2>
+        <span className="text-[#999] text-xs">{nails.length} 款 · {groupList.length} 组</span>
       </div>
 
       {/* 小红书链接解析 */}
@@ -90,13 +90,13 @@ function NailLibrary({ selected, onSelect }) {
           <input value={urlInput} onChange={(e) => setUrlInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && parseUrl()}
             placeholder="粘贴小红书链接，自动提取美甲图"
-            className="w-full bg-gray-900/50 border border-gray-800 rounded-xl px-3 py-2.5 pr-8 text-xs text-white placeholder-gray-600 outline-none focus:border-purple-500/60 transition-colors" />
+            className="w-full bg-[#f5f5f5] border border-[#eee] rounded-xl px-3 py-2.5 pr-8 text-xs text-[#222] placeholder-[#bbb] outline-none focus:border-[#FF2442]/40 transition-colors" />
           {urlInput && !parsing && (
-            <button onClick={() => setUrlInput('')} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-600 hover:text-gray-400 text-[10px]">✕</button>
+            <button onClick={() => setUrlInput('')} className="absolute right-2 top-1/2 -translate-y-1/2 text-[#ccc] hover:text-[#999] text-[10px]">✕</button>
           )}
         </div>
         <button onClick={parseUrl} disabled={parsing || !urlInput.trim()}
-          className="px-3 py-2.5 rounded-xl bg-purple-600/20 text-purple-300 text-xs hover:bg-purple-600/30 disabled:opacity-40 transition-colors whitespace-nowrap active:scale-95">
+          className="px-3 py-2.5 rounded-xl bg-[#FF2442] text-white text-xs hover:bg-[#e61e3a] disabled:opacity-40 transition-colors whitespace-nowrap active:scale-95">
           {parsing ? (
             <span className="flex items-center gap-1">
               <svg className="animate-spin h-3 w-3" viewBox="0 0 24 24" fill="none">
@@ -108,16 +108,16 @@ function NailLibrary({ selected, onSelect }) {
           ) : '解析'}
         </button>
       </div>
-      {parseError && <p className="text-red-400 text-xs mb-2">{parseError}</p>}
+      {parseError && <p className="text-[#FF2442] text-xs mb-2">{parseError}</p>}
 
       {/* 横滑款式选择器 */}
       {groupList.length > 0 ? (
         <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1" style={{ scrollbarWidth: 'none' }}>
           {/* 上传入口 */}
           <div onClick={() => uploadRef.current.click()}
-            className="shrink-0 w-[64px] h-[64px] rounded-xl border border-dashed border-gray-700 bg-gray-900/30 flex flex-col items-center justify-center gap-0.5 cursor-pointer hover:border-purple-500/50 transition-colors active:scale-95">
-            <span className="text-lg text-gray-600">+</span>
-            <span className="text-gray-600 text-[9px]">上传</span>
+            className="shrink-0 w-[64px] h-[64px] rounded-xl border border-dashed border-[#ddd] bg-[#f5f5f5] flex flex-col items-center justify-center gap-0.5 cursor-pointer hover:border-[#FF2442]/40 transition-colors active:scale-95">
+            <span className="text-lg text-[#ccc]">+</span>
+            <span className="text-[#bbb] text-[9px]">上传</span>
           </div>
           <input ref={uploadRef} type="file" accept="image/*" className="hidden"
             onChange={(e) => e.target.files[0] && addFile(e.target.files[0])} />
@@ -138,24 +138,24 @@ function NailLibrary({ selected, onSelect }) {
                   setExpandedGroup(isExpanded ? null : group.id)
                 }}>
                   <div className={`w-[64px] h-[64px] rounded-xl overflow-hidden cursor-pointer transition-all
-                    ${hasSelected ? 'ring-2 ring-purple-400 ring-offset-2 ring-offset-[#0a0a0a]' : 'hover:opacity-90'}`}>
+                    ${hasSelected ? 'ring-2 ring-[#FF2442] ring-offset-2 ring-offset-white' : 'hover:opacity-90'}`}>
                     <img src={firstImg.src} alt="nail" className="w-full h-full object-cover" />
                   </div>
                   {/* 多图数量角标 */}
                   {count > 1 && !isExpanded && (
-                    <div className="absolute -bottom-0.5 -right-0.5 w-[18px] h-[18px] rounded-full bg-gray-800 border border-gray-700 flex items-center justify-center">
-                      <span className="text-[9px] text-gray-400">{count}</span>
+                    <div className="absolute -bottom-0.5 -right-0.5 w-[18px] h-[18px] rounded-full bg-[#303034]/70 flex items-center justify-center">
+                      <span className="text-[9px] text-white">{count}</span>
                     </div>
                   )}
                   {/* 展开箭头 */}
                   {count > 1 && (
                     <div className="absolute top-0.5 right-0.5">
-                      <span className="text-[8px] text-white/60">{isExpanded ? '▴' : '▾'}</span>
+                      <span className="text-[8px] text-[#303034]/60">{isExpanded ? '▴' : '▾'}</span>
                     </div>
                   )}
                 </div>
                 {/* 组标签 */}
-                <span className="text-[9px] text-gray-600 text-center truncate w-[64px]">{group.label}</span>
+                <span className="text-[9px] text-[#999] text-center truncate w-[64px]">{group.label}</span>
 
                 {/* 展开子图 */}
                 {isExpanded && (
@@ -163,13 +163,13 @@ function NailLibrary({ selected, onSelect }) {
                     {group.items.map((nail) => (
                       <div key={nail.id} onClick={(e) => { e.stopPropagation(); onSelect(nail) }}
                         className={`shrink-0 w-[48px] h-[48px] rounded-lg overflow-hidden cursor-pointer transition-all
-                          ${selected?.id === nail.id ? 'ring-2 ring-purple-400 ring-offset-1 ring-offset-[#0a0a0a]' : 'hover:opacity-80'}`}>
+                          ${selected?.id === nail.id ? 'ring-2 ring-[#FF2442] ring-offset-1 ring-offset-white' : 'hover:opacity-80'}`}>
                         <img src={nail.src} alt="nail" className="w-full h-full object-cover" />
                       </div>
                     ))}
                     {/* 删除整组 */}
                     <button onClick={(e) => { e.stopPropagation(); deleteGroup(group.id) }}
-                      className="shrink-0 w-[48px] h-[48px] rounded-lg border border-red-900/50 bg-red-900/10 flex items-center justify-center text-red-400 text-[10px] hover:bg-red-900/20 transition-colors">
+                      className="shrink-0 w-[48px] h-[48px] rounded-lg border border-red-200 bg-red-50 flex items-center justify-center text-[#FF2442] text-[10px] hover:bg-red-100 transition-colors">
                       删除
                     </button>
                   </div>
@@ -179,7 +179,7 @@ function NailLibrary({ selected, onSelect }) {
           })}
         </div>
       ) : (
-        <p className="text-gray-700 text-xs text-center py-4">上传美甲图或粘贴小红书链接添加款式</p>
+        <p className="text-[#999] text-xs text-center py-4">上传美甲图或粘贴小红书链接添加款式</p>
       )}
     </div>
   )
@@ -188,6 +188,28 @@ function NailLibrary({ selected, onSelect }) {
 // ── 主页 ───────────────────────────────────────────────────
 export default function Home({ onNavigate, initialNails }) {
   const [selectedNail, setSelectedNail] = useState(null)
+  const [provider, setProvider] = useState(() => localStorage.getItem('cybernail_provider') || 'openai')
+
+  // 初始化时同步 provider 到后端
+  useEffect(() => {
+    fetch('/api/set-provider', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ provider }),
+    })
+  }, [])
+
+  // 切换 provider
+  const toggleProvider = async () => {
+    const next = provider === 'openai' ? 'grok' : 'openai'
+    setProvider(next)
+    localStorage.setItem('cybernail_provider', next)
+    await fetch('/api/set-provider', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ provider: next }),
+    })
+  }
 
   // 自动把帖子图片加入美甲库，并自动选中第一张
   useEffect(() => {
@@ -264,48 +286,55 @@ export default function Home({ onNavigate, initialNails }) {
   const handPreviewUrl = handFile ? URL.createObjectURL(handFile) : null
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] flex flex-col pb-6" style={{ fontFamily: "'PingFang SC', -apple-system, BlinkMacSystemFont, sans-serif" }}>
+    <div className="min-h-screen bg-[#FAFAFA] relative overflow-x-hidden flex flex-col items-center" style={{ fontFamily: "-apple-system, 'PingFang SC', sans-serif" }}>
+      <div className="w-full max-w-[375px] min-h-screen bg-white relative flex flex-col">
       {/* 顶栏 */}
-      <div className="px-5 pt-8 pb-4">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
-            <span className="text-white text-sm">✦</span>
+      <div className="bg-white flex items-center h-[44px] px-[16px] sticky top-0 z-20">
+        <div className="flex items-center gap-2 flex-1">
+          <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+            <span className="text-white text-xs">✦</span>
           </div>
-          <div>
-            <h1 className="text-xl font-bold text-white tracking-tight">CyberNail</h1>
-            <p className="text-gray-500 text-[10px] -mt-0.5">种草 → 试戴 → 询价</p>
-          </div>
+          <span className="text-[16px] font-semibold text-[#222]">CyberNail</span>
         </div>
+        {/* API 切换按钮 */}
+        <button onClick={toggleProvider}
+          className={`px-2 py-1 rounded-md text-[10px] font-medium transition-all active:scale-95 ${
+            provider === 'openai'
+              ? 'bg-green-50 text-green-600 border border-green-200'
+              : 'bg-orange-50 text-orange-600 border border-orange-200'
+          }`}>
+          {provider === 'openai' ? 'GPT-Image' : 'Grok'}
+        </button>
       </div>
 
-      <div className="flex-1 px-5 flex flex-col gap-6">
+      <div className="flex-1 px-4 flex flex-col gap-5 pb-4">
         {/* 美甲库 */}
         <NailLibrary selected={selectedNail} onSelect={setSelectedNail} />
 
         {/* 分割线 */}
-        <div className="border-t border-gray-800/50" />
+        <div className="border-t border-[#eee]" />
 
         {/* 手部上传 + 操作区 */}
         <div>
-          <h2 className="text-white font-semibold text-base mb-3">试戴</h2>
+          <h2 className="text-[#222] font-semibold text-base mb-3">试戴</h2>
 
           <div className="flex gap-3 mb-4">
             {/* 手部图 */}
             <div className="w-[55%]">
-              <p className="text-gray-500 text-xs mb-2">你的手</p>
-              <div className="relative w-full aspect-[4/3] rounded-xl border border-gray-800 bg-gray-900/30 overflow-hidden">
+              <p className="text-[#999] text-xs mb-2">你的手</p>
+              <div className="relative w-full aspect-[4/3] rounded-xl border border-[#eee] bg-[#f5f5f5] overflow-hidden">
                 {handFile ? (
                   <>
                     <img src={handPreviewUrl} alt="hand" className="absolute inset-0 w-full h-full object-cover" />
                     <button onClick={() => setHandFile(null)}
-                      className="absolute top-2 right-2 w-6 h-6 rounded-full bg-black/60 backdrop-blur-sm text-white text-xs flex items-center justify-center hover:bg-black/80 active:scale-90 transition-transform">✕</button>
+                      className="absolute top-2 right-2 w-6 h-6 rounded-full bg-black/50 backdrop-blur-sm text-white text-xs flex items-center justify-center hover:bg-black/70 active:scale-90 transition-transform">✕</button>
                   </>
                 ) : (
                   <div className="absolute inset-0 flex items-center justify-center gap-2">
                     <button onClick={() => cameraRef.current.click()}
-                      className="flex items-center gap-1 px-3 py-2 rounded-lg bg-purple-600/20 text-purple-300 text-xs hover:bg-purple-600/30 transition-colors active:scale-95">📷 拍照</button>
+                      className="flex items-center gap-1 px-3 py-2 rounded-lg bg-[#FF2442] text-white text-xs hover:bg-[#e61e3a] transition-colors active:scale-95">拍照</button>
                     <button onClick={() => inputRef.current.click()}
-                      className="flex items-center gap-1 px-3 py-2 rounded-lg bg-gray-800 text-gray-300 text-xs hover:bg-gray-700 transition-colors active:scale-95">🖼 相册</button>
+                      className="flex items-center gap-1 px-3 py-2 rounded-lg bg-[#303034] text-white text-xs hover:bg-[#303034]/80 transition-colors active:scale-95">相册</button>
                   </div>
                 )}
                 <input ref={inputRef} type="file" accept="image/*" className="hidden"
@@ -317,14 +346,14 @@ export default function Home({ onNavigate, initialNails }) {
 
             {/* 选中款式预览 */}
             <div className="w-[45%]">
-              <p className="text-gray-500 text-xs mb-2">选中款式</p>
-              <div className="w-full aspect-[4/3] rounded-xl bg-gray-900/30 border border-gray-800 overflow-hidden flex items-center justify-center">
+              <p className="text-[#999] text-xs mb-2">选中款式</p>
+              <div className="w-full aspect-[4/3] rounded-xl bg-[#f5f5f5] border border-[#eee] overflow-hidden flex items-center justify-center">
                 {selectedNail ? (
                   <img src={selectedNail.src} alt="selected" className="w-full h-full object-cover" />
                 ) : (
                   <div className="flex flex-col items-center gap-1">
-                    <span className="text-gray-700 text-lg">✦</span>
-                    <span className="text-gray-700 text-[10px]">从美甲库选择</span>
+                    <span className="text-[#ccc] text-lg">✦</span>
+                    <span className="text-[#bbb] text-[10px]">从美甲库选择</span>
                   </div>
                 )}
               </div>
@@ -333,30 +362,30 @@ export default function Home({ onNavigate, initialNails }) {
 
           {/* 提示信息 */}
           {!handFile && !selectedNail && (
-            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-900/30 border border-gray-800/50 mb-4">
-              <span className="text-purple-400 text-xs">💡</span>
-              <span className="text-gray-500 text-[11px]">上传手部照片 + 选择美甲款式，即可生成试戴效果</span>
+            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[#fff5f5] border border-[#FF2442]/10 mb-4">
+              <span className="text-[#FF2442] text-xs">💡</span>
+              <span className="text-[#999] text-[11px]">上传手部照片 + 选择美甲款式，即可生成试戴效果</span>
             </div>
           )}
           {handFile && !selectedNail && (
-            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-900/30 border border-gray-800/50 mb-4">
-              <span className="text-purple-400 text-xs">←</span>
-              <span className="text-gray-500 text-[11px]">请在美甲库中选择一个款式</span>
+            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[#fff5f5] border border-[#FF2442]/10 mb-4">
+              <span className="text-[#FF2442] text-xs">←</span>
+              <span className="text-[#999] text-[11px]">请在美甲库中选择一个款式</span>
             </div>
           )}
           {!handFile && selectedNail && (
-            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-900/30 border border-gray-800/50 mb-4">
-              <span className="text-purple-400 text-xs">←</span>
-              <span className="text-gray-500 text-[11px]">请上传你的手部照片</span>
+            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[#fff5f5] border border-[#FF2442]/10 mb-4">
+              <span className="text-[#FF2442] text-xs">←</span>
+              <span className="text-[#999] text-[11px]">请上传你的手部照片</span>
             </div>
           )}
 
           {/* 生成按钮 */}
           <button onClick={generate} disabled={!canGenerate}
-            className={`w-full py-3.5 rounded-xl font-semibold text-sm transition-all active:scale-[0.98]
+            className={`w-full py-3 rounded-xl font-semibold text-sm transition-all active:scale-[0.98]
               ${canGenerate
-                ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:opacity-90 shadow-lg shadow-purple-900/30'
-                : 'bg-gray-800/50 text-gray-600 cursor-not-allowed'}`}>
+                ? 'bg-[#FF2442] text-white hover:bg-[#e61e3a] shadow-md shadow-[#FF2442]/20'
+                : 'bg-[#f5f5f5] text-[#ccc] cursor-not-allowed'}`}>
             {loading ? (
               <span className="flex items-center justify-center gap-2">
                 <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
@@ -373,20 +402,20 @@ export default function Home({ onNavigate, initialNails }) {
             const fakeResult = selectedNail?.src || ''
             setResult(fakeResult)
             if (fakeResult) onNavigate('shops', { result: fakeResult, nail: selectedNail })
-          }} className="w-full py-2.5 rounded-xl text-gray-500 text-xs border border-gray-800 hover:border-gray-600 hover:text-gray-300 transition-colors">
+          }} className="w-full py-2.5 rounded-xl text-[#999] text-xs border border-[#eee] hover:border-[#ddd] hover:text-[#666] transition-colors mt-2">
             跳过生成 → 直接找美甲店
           </button>
 
           {/* 进度条 */}
           {loading && (
-            <div className="mt-3 h-1.5 rounded-full bg-gray-800 overflow-hidden">
-              <div className="h-full rounded-full bg-gradient-to-r from-purple-500 to-pink-500 transition-all duration-500 ease-out"
+            <div className="mt-3 h-1.5 rounded-full bg-[#f5f5f5] overflow-hidden">
+              <div className="h-full rounded-full bg-[#FF2442] transition-all duration-500 ease-out"
                 style={{ width: `${progress}%` }} />
             </div>
           )}
 
           {error && (
-            <div className="p-2.5 rounded-lg bg-red-900/20 border border-red-800/50 text-red-400 text-xs mt-3 flex items-start gap-2">
+            <div className="p-2.5 rounded-lg bg-[#fff5f5] border border-[#FF2442]/20 text-[#FF2442] text-xs mt-3 flex items-start gap-2">
               <span>⚠️</span>
               <span>{error}</span>
             </div>
@@ -396,16 +425,16 @@ export default function Home({ onNavigate, initialNails }) {
         {/* 结果 */}
         {result && (
           <div>
-            <h2 className="text-white font-semibold text-base mb-3">效果预览</h2>
+            <h2 className="text-[#222] font-semibold text-base mb-3">效果预览</h2>
 
             {/* 对比展示 */}
             <div className="grid grid-cols-2 gap-2 mb-2">
-              <div className="rounded-xl overflow-hidden border border-gray-800">
-                <div className="bg-gray-800/50 px-2 py-1 text-[10px] text-gray-400 text-center">原始手部</div>
+              <div className="rounded-xl overflow-hidden border border-[#eee]">
+                <div className="bg-[#f5f5f5] px-2 py-1 text-[10px] text-[#999] text-center">原始手部</div>
                 {handFile && <img src={handPreviewUrl} alt="original" className="w-full aspect-square object-cover" />}
               </div>
-              <div className="rounded-xl overflow-hidden border border-purple-500/30">
-                <div className="bg-purple-900/30 px-2 py-1 text-[10px] text-purple-300 text-center">AI 试戴</div>
+              <div className="rounded-xl overflow-hidden border border-[#FF2442]/30">
+                <div className="bg-[#FF2442]/5 px-2 py-1 text-[10px] text-[#FF2442] text-center">AI 试戴</div>
                 <img src={result} alt="result" className="w-full aspect-square object-cover" />
               </div>
             </div>
@@ -415,13 +444,14 @@ export default function Home({ onNavigate, initialNails }) {
               <img src={result} alt="result" className="w-full rounded-2xl" />
               <div className="absolute bottom-3 left-3 right-3 flex gap-2">
                 <button onClick={() => { const a = document.createElement('a'); a.href = result; a.download = 'cybernail.png'; a.click() }}
-                  className="flex-1 px-3 py-2 bg-black/60 backdrop-blur text-white text-xs rounded-xl hover:bg-black/80 transition-colors text-center active:scale-95">↓ 保存图片</button>
+                  className="flex-1 px-3 py-2 bg-black/50 backdrop-blur text-white text-xs rounded-xl hover:bg-black/70 transition-colors text-center active:scale-95">保存图片</button>
                 <button onClick={() => onNavigate('shops', { result, nail: selectedNail })}
-                  className="flex-1 px-3 py-2 bg-purple-500/80 backdrop-blur text-white text-xs rounded-xl hover:bg-purple-500 transition-colors text-center active:scale-95">💅 找美甲店</button>
+                  className="flex-1 px-3 py-2 bg-[#FF2442] backdrop-blur text-white text-xs rounded-xl hover:bg-[#e61e3a] transition-colors text-center active:scale-95">找美甲店</button>
               </div>
             </div>
           </div>
         )}
+      </div>
       </div>
     </div>
   )

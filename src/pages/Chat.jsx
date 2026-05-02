@@ -52,18 +52,16 @@ export default function Chat({ onBack, shop, nailData }) {
   }
 
   return (
-    <div className="min-h-screen bg-white flex flex-col" style={{ fontFamily: "-apple-system, 'PingFang SC', sans-serif" }}>
-      {/* 状态栏 */}
-      <div className="h-[44px] bg-white" />
+    <div className="min-h-screen bg-[#FAFAFA] relative overflow-x-hidden flex flex-col items-center" style={{ fontFamily: "-apple-system, 'PingFang SC', sans-serif" }}>
+      <div className="w-full max-w-[375px] min-h-screen bg-white relative flex flex-col">
 
-      {/* 顶栏 h≈53 */}
-      <div className="px-[12px] flex items-center h-[53px] gap-[10px] border-b border-[#f5f5f5]">
+      {/* 顶栏 */}
+      <div className="px-[12px] flex items-center h-[44px] gap-[10px] border-b border-[#f5f5f5] sticky top-0 bg-white z-20">
         <button onClick={onBack}>
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#222" strokeWidth="2.5" strokeLinecap="round">
             <polyline points="15 18 9 12 15 6"/>
           </svg>
         </button>
-        {/* 头像: 34.4x34.4 rx=17 */}
         <div className="w-[34px] h-[34px] rounded-full bg-[#f5f5f5] flex items-center justify-center text-[14px] shrink-0">{shop?.avatar || '💅'}</div>
         <div className="flex-1 min-w-0">
           <p className="text-[#222] text-[16px] font-medium truncate leading-tight">{shop?.name || '美甲店'}</p>
@@ -78,11 +76,9 @@ export default function Chat({ onBack, shop, nailData }) {
       <div className="flex-1 overflow-y-auto px-[16px] py-[12px] flex flex-col gap-[16px]">
         {messages.map((msg) => (
           <div key={msg.id} className={`flex gap-[10px] ${msg.from === 'user' ? 'flex-row-reverse' : ''}`}>
-            {/* 头像: 34.4x34.4 rx=17 */}
             <div className="w-[34px] h-[34px] rounded-full bg-[#f5f5f5] flex items-center justify-center text-[14px] shrink-0">
               {msg.from === 'user' ? '🧑' : (shop?.avatar || '💅')}
             </div>
-            {/* 消息内容 */}
             <div className={`max-w-[65%] ${msg.from === 'user' ? 'items-end' : 'items-start'}`}>
               {msg.type === 'image' ? (
                 <div className="rounded-[10px] overflow-hidden">
@@ -113,7 +109,7 @@ export default function Chat({ onBack, shop, nailData }) {
         <div ref={bottomRef} />
       </div>
 
-      {/* 快捷操作栏: y≈693 h=30.5 rx=8 */}
+      {/* 快捷操作栏 */}
       <div className="px-[12px] py-[6px] flex gap-[4px] overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
         {[
           { label: '相册', w: 52 },
@@ -130,7 +126,7 @@ export default function Chat({ onBack, shop, nailData }) {
         ))}
       </div>
 
-      {/* 输入框: y≈731 w=352 h=42 rx=11 #F5F5F5 */}
+      {/* 输入框 */}
       <div className="px-[12px] py-[8px] flex items-center gap-[8px]"
         style={{ paddingBottom: 'max(8px, env(safe-area-inset-bottom))' }}>
         <div className="flex-1 bg-[#F5F5F5] rounded-[11px] px-[14px] h-[42px] flex items-center">
@@ -141,6 +137,8 @@ export default function Chat({ onBack, shop, nailData }) {
         </div>
         <button onClick={send} disabled={!input.trim()}
           className="shrink-0 px-[14px] h-[42px] rounded-[11px] bg-[#2781FF] text-white text-[15px] font-medium disabled:opacity-30">发送</button>
+      </div>
+
       </div>
     </div>
   )

@@ -2,6 +2,7 @@ import os
 import base64
 import re
 import io
+import json
 import httpx
 from PIL import Image
 from fastapi import FastAPI, File, Form, UploadFile, HTTPException
@@ -13,13 +14,38 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:5174"],
+    allow_origins=["*"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-API_KEY = os.environ.get("OPENAI_API_KEY", "sk-TD5mko9EUjlhT293pGfzrw7pcVKb4yq9BnKvQTP3IKiAXR6q")
-BASE_URL = os.environ.get("OPENAI_BASE_URL", "https://yungpt.com/v1")
+OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
+OPENAI_BASE_URL = os.environ.get("OPENAI_BASE_URL", "https://api.openai.com/v1")
+
+# 兜底中转配置（gpt-image-1 不可用时降级）
+FALLBACK_API_KEY = os.environ.get("FALLBACK_API_KEY", "sk-TD5mko9EUjlhT293pGfzrw7pcVKb4yq9BnKvQTP3IKiAXR6q")
+FALLBACK_BASE_URL = "https://yungpt.com/v1"
+
+# 当前 API provider: "openai" 或 "grok"
+_current_provider = "openai"
+
+
+class ProviderRequest(BaseModel):
+    provider: str  # "openai" 或 "grok"
+
+
+@app.post("/api/set-provider")
+async def set_provider(req: ProviderRequest):
+    global _current_provider
+    if req.provider not in ("openai", "grok"):
+        raise HTTPException(status_code=400, detail="provider 必须是 openai 或 grok")
+    _current_provider = req.provider
+    return {"provider": _current_provider}
+
+
+@app.get("/api/provider")
+async def get_provider():
+    return {"provider": _current_provider}
 
 
 @app.post("/api/cyber-nails")
@@ -30,13 +56,21 @@ async def cyber_nails(
 ):
     hand_data = await hand.read()
 
-    # nail 可以是上传文件或远程 URL
     if nail and nail.filename:
         nail_data = await nail.read()
     elif nail_url:
-        async with httpx.AsyncClient(timeout=30, follow_redirects=True) as dl:
-            r = await dl.get(nail_url, headers={"Referer": "https://www.xiaohongshu.com/"})
-        nail_data = r.content
+        if nail_url.startswith("/"):
+            # 本地路径，从 Vite public 目录读取
+            import pathlib
+            local_path = pathlib.Path("/Users/zhuzijie1/change-your-life/public") / nail_url.lstrip("/")
+            if local_path.exists():
+                nail_data = local_path.read_bytes()
+            else:
+                raise HTTPException(status_code=400, detail=f"本地文件不存在: {nail_url}")
+        else:
+            async with httpx.AsyncClient(timeout=30, follow_redirects=True) as dl:
+                r = await dl.get(nail_url, headers={"Referer": "https://www.xiaohongshu.com/"})
+            nail_data = r.content
     else:
         raise HTTPException(status_code=400, detail="需要提供美甲图")
 
@@ -50,61 +84,95 @@ async def cyber_nails(
 
     hand_data = compress(hand_data)
     nail_data = compress(nail_data)
+
+    prompt = (
+        "Edit the first image (hand photo): replace the nails on this hand with the nail art design shown in the second image. "
+        "Requirements: precisely replicate each nail's design from the second image onto the corresponding nail of the first image. "
+        "Keep the hand skin, background, and lighting completely unchanged. Only modify the nail area. "
+        "Output the edited image directly."
+    )
+
+    # 读取当前 provider 选择
+    provider = _current_provider
+
+    if provider == "openai":
+        try:
+            return await _call_openai_responses(hand_data, nail_data, prompt)
+        except Exception as e:
+            print(f"[OpenAI API failed, falling back]: {e}")
+            return await _call_grok_fallback(hand_data, nail_data, prompt)
+    else:
+        return await _call_grok_fallback(hand_data, nail_data, prompt)
+
+
+async def _call_openai_responses(hand_data: bytes, nail_data: bytes, prompt: str):
+    # gpt-image-1 用 /images/edits 端点，multipart form 上传多图
+    async with httpx.AsyncClient(timeout=300) as client:
+        resp = await client.post(
+            f"{OPENAI_BASE_URL}/images/edits",
+            headers={"Authorization": f"Bearer {OPENAI_API_KEY}"},
+            data={
+                "model": "gpt-image-1",
+                "prompt": prompt,
+                "n": "1",
+                "size": "1024x1024",
+            },
+            files=[
+                ("image[]", ("hand.jpg", hand_data, "image/jpeg")),
+                ("image[]", ("nail.jpg", nail_data, "image/jpeg")),
+            ],
+        )
+
+    if resp.status_code != 200:
+        raise Exception(f"OpenAI API error {resp.status_code}: {resp.text[:500]}")
+
+    data = resp.json()
+    if "data" in data and data["data"]:
+        img_b64 = data["data"][0].get("b64_json")
+        if img_b64:
+            return JSONResponse({"image": f"data:image/png;base64,{img_b64}"})
+
+    raise Exception(f"No image in OpenAI response: {json.dumps(data)[:500]}")
+
+
+async def _call_grok_fallback(hand_data: bytes, nail_data: bytes, prompt: str):
     hand_b64 = base64.b64encode(hand_data).decode()
     nail_b64 = base64.b64encode(nail_data).decode()
-    hand_mime = "image/jpeg"
-    nail_mime = "image/jpeg"
-
     payload = {
         "model": "grok-3-image",
         "messages": [{
             "role": "user",
             "content": [
-                {"type": "image_url", "image_url": {"url": f"data:{hand_mime};base64,{hand_b64}"}},
-                {"type": "image_url", "image_url": {"url": f"data:{nail_mime};base64,{nail_b64}"}},
-                {"type": "text", "text": (
-                    "请将第一张图中手部的指甲替换为第二张图的美甲款式。"
-                    "要求：完整复现第二张图每根手指不同的指甲设计，"
-                    "手部皮肤、背景、光线完全不变，只替换指甲部分。"
-                    "请直接输出编辑后的图片。"
-                )}
+                {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{hand_b64}"}},
+                {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{nail_b64}"}},
+                {"type": "text", "text": prompt},
             ]
         }]
     }
 
-    try:
-        async with httpx.AsyncClient(timeout=300) as api_client:
-            resp = await api_client.post(
-                f"{BASE_URL}/chat/completions",
-                headers={"Authorization": f"Bearer {API_KEY}", "Content-Type": "application/json"},
-                json=payload,
-            )
-        data = resp.json()
-        if "error" in data or "choices" not in data:
-            raise HTTPException(status_code=500, detail=str(data))
-        content = data["choices"][0]["message"]["content"]
+    async with httpx.AsyncClient(timeout=300) as client:
+        resp = await client.post(
+            f"{FALLBACK_BASE_URL}/chat/completions",
+            headers={"Authorization": f"Bearer {FALLBACK_API_KEY}", "Content-Type": "application/json"},
+            json=payload,
+        )
+    data = resp.json()
+    if "error" in data or "choices" not in data:
+        raise HTTPException(status_code=500, detail=str(data))
+    content = data["choices"][0]["message"]["content"]
 
-        # 提取图片 URL
-        urls = re.findall(r'!\[.*?\]\((.*?)\)', content)
-        if not urls:
-            raise ValueError("No image in response")
+    urls = re.findall(r'!\[.*?\]\((.*?)\)', content)
+    if not urls:
+        raise ValueError("No image in grok response")
 
-        img_url = urls[0]
+    img_url = urls[0]
+    if img_url.startswith("data:"):
+        return JSONResponse({"image": img_url})
 
-        # 如果是 data URL 直接返回，否则下载
-        if img_url.startswith("data:"):
-            return JSONResponse({"image": img_url})
-
-        async with httpx.AsyncClient(timeout=60) as img_client:
-            img_resp = await img_client.get(img_url)
-        img_b64 = base64.b64encode(img_resp.content).decode()
-        return JSONResponse({"image": f"data:image/png;base64,{img_b64}"})
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        import traceback
-        raise HTTPException(status_code=500, detail=traceback.format_exc())
+    async with httpx.AsyncClient(timeout=60) as img_client:
+        img_resp = await img_client.get(img_url)
+    img_b64 = base64.b64encode(img_resp.content).decode()
+    return JSONResponse({"image": f"data:image/png;base64,{img_b64}"})
 
 
 class ParseUrlRequest(BaseModel):

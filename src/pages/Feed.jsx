@@ -1,79 +1,57 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 
-const unsplash = (id, w = 400, h = 400) =>
-  `https://images.unsplash.com/photo-${id}?w=${w}&h=${h}&fit=crop&q=80`
-
-// ── 帖子模板库 ──────────────────────────────────────────────
+// ── 真实帖子数据（本地图片）──────────────────────────────────
 const NAIL_POSTS = [
-  { title: 'nail share 💅 海莉比伯同款蹭粉美甲', author: 'seazacc nail', likes: 43, img: 'uk4lSX58e7M' },
-  { title: '蹭粉就是这样蹭的！闪到没朋友✨', author: '指尖DESIGN', likes: 59, img: 'tXwBDZS2JxQ' },
-  { title: '温柔又高级！皮粉色法式➕蹭粉💅🏻', author: 'Ranx Nail', likes: 9, img: '51-4BSipn7E' },
-  { title: '白月光美甲 春天必做款🤍', author: '晴子大姐姐', likes: 28, img: 'r-Ej0NQmFlQ' },
-  { title: 'mmeng｜简约海莉美甲🤍', author: 'mmdaily', likes: 82, img: 'QORhW0IQHVQ' },
-  { title: '25年度美甲合集₊˚⊹⋆ 每款都想做！', author: 'miyaaa', likes: 84, img: 't1uTqt6qhWI' },
-  { title: '裸粉色系合集！黄皮也超显白🫶', author: 'Nail Diary', likes: 127, img: 'jRXxNpA6d_k' },
-  { title: '极简法式美甲 越简单越高级', author: '小鹿美甲', likes: 66, img: 'gb6gtiTZKB8' },
-  { title: '猫眼美甲也太好看了吧！动态感绝了', author: 'Glow Nails', likes: 203, img: 'xUaicCcs9Es' },
-  { title: '今日份美甲分享 水蜜桃色🍑', author: '果冻美甲屋', likes: 91, img: 'OIEU0eopPT4' },
-  { title: '冬天就是要做深色系美甲呀🍷', author: '暖光美甲', likes: 45, img: 'Y14F-1vzVds' },
-  { title: '手绘小花美甲 细节控必看🌸', author: '画画的小鱼', likes: 156, img: '-4T7M75CLU4' },
-  { title: '第一次做美甲就成功！教程来了', author: 'DIY美甲', likes: 34, img: 'fcOrPm2L044' },
-  { title: '短甲女孩必看！这10款超显手长', author: '短甲联盟', likes: 277, img: 'hvqHtZqNMeI' },
-  { title: '闪钻美甲✨ 夜店C位预定', author: 'BLING NAIL', likes: 18, img: 'OpjlRo-31SI' },
-  { title: '日系美甲合集 清透感拉满🌿', author: '和风美甲', likes: 112, img: 'i_HQ8CFcyfE' },
-  { title: '辣妹必做！黑色系美甲合集🖤', author: '暗黑美甲', likes: 89, img: 'lhZjI55SaMY' },
-  { title: '渐变美甲yyds 配色超绝', author: '配色研究所', likes: 145, img: 'gJ3hKjX92K8' },
+  { title: 'nail share 💅 海莉比伯同款蹭粉美甲', author: 'seazacc', likes: 43,
+    images: ['/posts/nail/post0_0.jpg', '/posts/nail/post0_1.jpg', '/posts/nail/post0_2.jpg'] },
+  { title: '蹭粉就是这样蹭的！闪到没朋友✨', author: '指尖DESIGN', likes: 59,
+    images: ['/posts/nail/post1_0.jpg', '/posts/nail/post1_1.jpg', '/posts/nail/post1_2.jpg', '/posts/nail/post1_3.jpg'] },
+  { title: '皮粉色法式➕蹭粉海莉💅🏻', author: 'Ranx Nail', likes: 9,
+    images: ['/posts/nail/post2_0.jpg', '/posts/nail/post2_1.jpg', '/posts/nail/post2_2.jpg', '/posts/nail/post2_3.jpg'] },
+  { title: '白月光美甲 春天必做款🤍', author: '晴子大姐姐', likes: 28,
+    images: ['/posts/nail/post3_0.jpg', '/posts/nail/post3_1.jpg', '/posts/nail/post3_2.jpg', '/posts/nail/post3_3.jpg'] },
+  { title: 'mmeng｜简约海莉美甲🤍', author: 'mmdaily', likes: 82,
+    images: ['/posts/nail/post4_0.jpg', '/posts/nail/post4_1.jpg', '/posts/nail/post4_2.jpg', '/posts/nail/post4_3.jpg'] },
+  { title: '25年度美甲合集₊˚⊹⋆ 每款都想做！', author: 'miyaaa', likes: 84,
+    images: ['/posts/nail/post5_0.jpg', '/posts/nail/post5_1.jpg', '/posts/nail/post5_2.jpg', '/posts/nail/post5_3.jpg'] },
 ]
 
 const PET_POSTS = [
-  { title: '我家猫又双叒叕在卖萌了🥺', author: '猫猫头', likes: 312, img: 'nxbgDOQJ8qw' },
-  { title: '小橘猫成长记录 一个月变化好大', author: '橘座日记', likes: 87, img: 'nKC772R_qog' },
-  { title: '谁能拒绝一只呼噜噜的小猫咪', author: '吸猫日常', likes: 256, img: '5UvvHx8yhE0' },
-  { title: '三花姐妹花🐱 猫咪届女团', author: '三花猫妈妈', likes: 198, img: 'rplhB9mYF48' },
-  { title: '猫咪戴花环 治愈系满分🌸', author: '花与猫', likes: 445, img: 'hxEAE88Onv0' },
-  { title: '在路边捡到一只小猫咪 救助记录', author: '流浪猫救助', likes: 534, img: 'GgysmOBlrDw' },
-  { title: '白猫仙境 国风写真太绝了', author: '拍猫的阿伟', likes: 167, img: 'fVNyjet1CXY' },
+  { title: '我家猫又双叒叕在卖萌了🥺', author: '猫猫头', likes: 312, images: ['/posts/pet/pet0_0.jpg'] },
+  { title: '小橘猫成长记录 一个月变化好大', author: '橘座日记', likes: 87, images: ['/posts/pet/pet1_0.jpg'] },
+  { title: '谁能拒绝一只呼噜噜的小猫咪', author: '吸猫日常', likes: 256, images: ['/posts/pet/pet2_0.jpg'] },
+  { title: '三花姐妹花🐱 猫咪届女团', author: '三花猫妈妈', likes: 198, images: ['/posts/pet/pet3_0.jpg'] },
+  { title: '猫咪戴花环 治愈系满分🌸', author: '花与猫', likes: 445, images: ['/posts/pet/pet4_0.jpg'] },
+  { title: '在路边捡到一只小猫咪 救助记录', author: '流浪猫救助', likes: 534, images: ['/posts/pet/pet5_0.jpg'] },
+  { title: '白猫仙境 国风写真太绝了', author: '拍猫的阿伟', likes: 167, images: ['/posts/pet/pet6_0.jpg'] },
 ]
 
 const RENT_POSTS = [
-  { title: '朝阳大悦城旁 精装一居室 随时看房', author: '北京租房君', likes: 23, img: '9spwungiWxc' },
-  { title: '望京SOHO 日式ins风公寓 拎包入住', author: '好房推荐官', likes: 41, img: 'URsdSzdD1iA' },
-  { title: '三里屯宝藏单间 采光超好！', author: '租房小助手', likes: 16, img: '3wylDrjxH-E' },
-  { title: '中关村创业公寓 月租3200起', author: '码农租房', likes: 37, img: 'TieKJRey-nM' },
-  { title: '西单大悦城旁 温馨小窝🛋️', author: '好运租房', likes: 29, img: 'QGxBeUDkeWk' },
+  { title: '朝阳大悦城旁 精装一居室 随时看房', author: '北京租房君', likes: 23, images: ['/posts/rent/rent0_0.jpg'] },
+  { title: '望京SOHO 日式ins风公寓 拎包入住', author: '好房推荐官', likes: 41, images: ['/posts/rent/rent1_0.jpg'] },
+  { title: '三里屯宝藏单间 采光超好！', author: '租房小助手', likes: 16, images: ['/posts/rent/rent2_0.jpg'] },
+  { title: '中关村创业公寓 月租3200起', author: '码农租房', likes: 37, images: ['/posts/rent/rent3_0.jpg'] },
+  { title: '西单大悦城旁 温馨小窝🛋️', author: '好运租房', likes: 29, images: ['/posts/rent/rent4_0.jpg'] },
 ]
 
 // 按比例穿插：美甲70% 宠物20% 租房10%
 function generatePosts(count) {
   const result = []
-  const all = [
-    ...NAIL_POSTS.map(p => ({ ...p, type: 'nail' })),
-    ...PET_POSTS.map(p => ({ ...p, type: 'pet' })),
-    ...RENT_POSTS.map(p => ({ ...p, type: 'rent' })),
-  ]
-  // 穿插策略：每7条中5美甲1宠物1租房
   const pattern = ['nail', 'nail', 'nail', 'pet', 'nail', 'rent', 'nail', 'nail', 'nail', 'pet', 'nail']
-  const byType = { nail: [...NAIL_POSTS], pet: [...PET_POSTS], rent: [...RENT_POSTS] }
   const counters = { nail: 0, pet: 0, rent: 0 }
 
   for (let i = 0; i < count; i++) {
     const type = pattern[i % pattern.length]
-    const pool = byType[type]
+    const pool = type === 'nail' ? NAIL_POSTS : type === 'pet' ? PET_POSTS : RENT_POSTS
     const idx = counters[type] % pool.length
     counters[type]++
     const p = pool[idx]
-    const images = [unsplash(p.img, 400, 400)]
-    // 部分帖子多图
-    const extraCount = Math.random() > 0.6 ? Math.floor(Math.random() * 3) + 1 : 0
-    for (let j = 0; j < extraCount; j++) {
-      images.push(unsplash(p.img, 400, 400))
-    }
     result.push({
       id: Date.now() + i,
       title: p.title,
       author: p.author,
       likes: p.likes + Math.floor(Math.random() * 20),
-      images,
+      images: p.images,
       content: p.title,
       tags: type === 'nail' ? ['#美甲分享'] : type === 'pet' ? ['#猫咪日常'] : ['#租房'],
       type,
@@ -134,7 +112,8 @@ export default function Feed({ onPost }) {
   }, [loadMore])
 
   return (
-    <div className="min-h-screen bg-[#FAFAFA] max-w-[375px] mx-auto relative overflow-x-hidden" style={{ fontFamily: "-apple-system, 'PingFang SC', sans-serif" }}>
+    <div className="min-h-screen bg-[#FAFAFA] relative overflow-x-hidden flex flex-col items-center" style={{ fontFamily: "-apple-system, 'PingFang SC', sans-serif" }}>
+      <div className="w-full max-w-[375px] relative">
       {/* 导航栏 */}
       <div className="bg-white flex items-center h-[44px] px-[16px] sticky top-0 z-20">
         <button className="shrink-0 mr-[12px]">
@@ -172,11 +151,6 @@ export default function Feed({ onPost }) {
               {/* 封面图 */}
               <div className="w-full aspect-square bg-[#f0f0f0] relative overflow-hidden">
                 <img src={post.images[0]} alt="" className="w-full h-full object-cover" loading="lazy" />
-                {post.images.length > 1 && (
-                  <div className="absolute top-[6px] right-[6px] w-[20px] h-[20px] rounded-full bg-black/20 flex items-center justify-center">
-                    <img src="/展开.png" alt="multi" className="w-[12px] h-[12px]" />
-                  </div>
-                )}
               </div>
               {/* 标题 + 作者 */}
               <div style={{ padding: `${S.imgToTitle}px ${S.cardPaddingX}px ${S.cardPaddingBottom}px` }}>
@@ -227,7 +201,7 @@ export default function Feed({ onPost }) {
       </div>
 
       {/* 底部导航 */}
-      <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[375px] bg-white border-t border-[#eee] z-10">
+      <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[375px] bg-white border-t border-[#eee] z-10" style={{ maxWidth: 375 }}>
         <div className="flex items-center justify-around px-[10px] h-[50px]">
           <button className="flex items-center justify-center"><span className="text-[#222] text-[16px] font-medium">首页</span></button>
           <button className="flex items-center justify-center"><span className="text-[#999] text-[16px]">购物</span></button>
@@ -236,6 +210,7 @@ export default function Feed({ onPost }) {
           <button className="flex items-center justify-center"><span className="text-[#999] text-[16px]">我</span></button>
         </div>
         <div className="flex justify-center pb-[8px]"><div className="w-[139px] h-[5px] rounded-[2.5px] bg-black" /></div>
+      </div>
       </div>
     </div>
   )
