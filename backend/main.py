@@ -213,27 +213,64 @@ async def parse_nail_url(req: ParseUrlRequest):
             try:
                 data = json_mod.loads(raw)
 
-                def find_images(obj, results=None):
-                    if results is None:
-                        results = []
-                    if isinstance(obj, dict):
-                        for k, v in obj.items():
-                            if k in ('url', 'urlDefault', 'originUrl') and isinstance(v, str) \
-                                    and ('xhscdn' in v or 'sns-img' in v) and '!h5_1080jpg' in v:
-                                if v not in results:
-                                    results.append(v)
-                            else:
-                                find_images(v, results)
-                    elif isinstance(obj, list):
-                        for i in obj:
-                            find_images(i, results)
-                    return results
+                # 优先从 normalNotePreloadData.imagesList 提取无水印大图
+                images = []
+                try:
+                    preload = data.get("noteData", {}).get("normalNotePreloadData", {})
+                    img_list = preload.get("imagesList", [])
+                    for item in img_list:
+                        large_url = item.get("urlSizeLarge", "")
+                        if large_url:
+                            # 把 webp 改 jpg，确保 origin=0
+                            img_url = large_url.replace("/format/webp", "/format/jpg")
+                            if "origin=0" not in img_url:
+                                img_url += "&origin=0" if "?" in img_url else "?origin=0"
+                            images.append(img_url)
+                except Exception:
+                    pass
 
-                images = find_images(data)
+                # 如果上面没拿到，降级到 imageList 的 infoList
+                if not images:
+                    try:
+                        note = data.get("noteData", {}).get("data", {}).get("noteData", {})
+                        for item in note.get("imageList", []):
+                            img_url = item.get("url", "")
+                            if img_url and ("xhscdn" in img_url or "sns-img" in img_url):
+                                # 去掉 !h5_1080jpg 等水印后缀，换用无水印域名
+                                base = img_url.split("!")[0]
+                                # 替换为无水印域名
+                                no_wm = re.sub(r'https?://sns-webpic-qc\.xhscdn\.com/\d+/[a-f0-9]+/', 'http://sns-na-i6.xhscdn.com/', base)
+                                if no_wm != base:
+                                    no_wm += "?imageView2/2/w/1080/format/jpg&origin=0"
+                                else:
+                                    no_wm += "?imageView2/2/w/1080/format/jpg"
+                                images.append(no_wm)
+                    except Exception:
+                        pass
+
+                # 最后兜底：递归搜索带水印的图
+                if not images:
+                    def find_images(obj, results=None):
+                        if results is None:
+                            results = []
+                        if isinstance(obj, dict):
+                            for k, v in obj.items():
+                                if k in ('url', 'urlDefault', 'originUrl') and isinstance(v, str) \
+                                        and ('xhscdn' in v or 'sns-img' in v) and '!h5_1080jpg' in v:
+                                    if v not in results:
+                                        results.append(v)
+                                else:
+                                    find_images(v, results)
+                        elif isinstance(obj, list):
+                            for i in obj:
+                                find_images(i, results)
+                        return results
+                    images = find_images(data)
+
                 # 去重
                 seen, unique = set(), []
                 for img in images:
-                    base = img.split('!')[0]
+                    base = re.sub(r'[?!].*$', '', img)
                     if base not in seen:
                         seen.add(base)
                         unique.append(img)

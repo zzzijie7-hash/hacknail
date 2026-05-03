@@ -1,48 +1,57 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 
 // ── 真实帖子数据（本地图片）──────────────────────────────────
+const V = '?v=2'
 const NAIL_POSTS = [
   { title: 'nail share 💅 海莉比伯同款蹭粉美甲', author: 'seazacc', likes: 43,
-    images: ['/posts/nail/post0_0.jpg', '/posts/nail/post0_1.jpg', '/posts/nail/post0_2.jpg'] },
+    images: ['/posts/nail/post0_0.jpg'+V, '/posts/nail/post0_1.jpg'+V, '/posts/nail/post0_2.jpg'+V] },
   { title: '蹭粉就是这样蹭的！闪到没朋友✨', author: '指尖DESIGN', likes: 59,
-    images: ['/posts/nail/post1_0.jpg', '/posts/nail/post1_1.jpg', '/posts/nail/post1_2.jpg', '/posts/nail/post1_3.jpg'] },
+    images: ['/posts/nail/post1_0.jpg'+V, '/posts/nail/post1_1.jpg'+V, '/posts/nail/post1_2.jpg'+V, '/posts/nail/post1_3.jpg'+V] },
   { title: '皮粉色法式➕蹭粉海莉💅🏻', author: 'Ranx Nail', likes: 9,
-    images: ['/posts/nail/post2_0.jpg', '/posts/nail/post2_1.jpg', '/posts/nail/post2_2.jpg', '/posts/nail/post2_3.jpg'] },
+    images: ['/posts/nail/post2_0.jpg'+V, '/posts/nail/post2_1.jpg'+V, '/posts/nail/post2_2.jpg'+V, '/posts/nail/post2_3.jpg'+V] },
   { title: '白月光美甲 春天必做款🤍', author: '晴子大姐姐', likes: 28,
-    images: ['/posts/nail/post3_0.jpg', '/posts/nail/post3_1.jpg', '/posts/nail/post3_2.jpg', '/posts/nail/post3_3.jpg'] },
+    images: ['/posts/nail/post3_0.jpg'+V, '/posts/nail/post3_1.jpg'+V, '/posts/nail/post3_2.jpg'+V, '/posts/nail/post3_3.jpg'+V] },
   { title: 'mmeng｜简约海莉美甲🤍', author: 'mmdaily', likes: 82,
-    images: ['/posts/nail/post4_0.jpg', '/posts/nail/post4_1.jpg', '/posts/nail/post4_2.jpg', '/posts/nail/post4_3.jpg'] },
+    images: ['/posts/nail/post4_0.jpg'+V, '/posts/nail/post4_1.jpg'+V, '/posts/nail/post4_2.jpg'+V, '/posts/nail/post4_3.jpg'+V] },
   { title: '25年度美甲合集₊˚⊹⋆ 每款都想做！', author: 'miyaaa', likes: 84,
-    images: ['/posts/nail/post5_0.jpg', '/posts/nail/post5_1.jpg', '/posts/nail/post5_2.jpg', '/posts/nail/post5_3.jpg'] },
+    images: ['/posts/nail/post5_0.jpg'+V, '/posts/nail/post5_1.jpg'+V, '/posts/nail/post5_2.jpg'+V, '/posts/nail/post5_3.jpg'+V] },
 ]
 
 const PET_POSTS = [
-  { title: '我家猫又双叒叕在卖萌了🥺', author: '猫猫头', likes: 312, images: ['/posts/pet/pet0_0.jpg'] },
-  { title: '小橘猫成长记录 一个月变化好大', author: '橘座日记', likes: 87, images: ['/posts/pet/pet1_0.jpg'] },
-  { title: '谁能拒绝一只呼噜噜的小猫咪', author: '吸猫日常', likes: 256, images: ['/posts/pet/pet2_0.jpg'] },
-  { title: '三花姐妹花🐱 猫咪届女团', author: '三花猫妈妈', likes: 198, images: ['/posts/pet/pet3_0.jpg'] },
-  { title: '猫咪戴花环 治愈系满分🌸', author: '花与猫', likes: 445, images: ['/posts/pet/pet4_0.jpg'] },
-  { title: '在路边捡到一只小猫咪 救助记录', author: '流浪猫救助', likes: 534, images: ['/posts/pet/pet5_0.jpg'] },
-  { title: '白猫仙境 国风写真太绝了', author: '拍猫的阿伟', likes: 167, images: ['/posts/pet/pet6_0.jpg'] },
+  { title: '我家猫又双叒叕在卖萌了🥺', author: '猫猫头', likes: 312, images: ['/posts/pet/cat0.jpg'] },
+  { title: '橘猫日常 今天也要黏着你🐱', author: '橘座日记', likes: 487, images: ['/posts/pet/cat1.jpg'] },
 ]
 
-const RENT_POSTS = [
-  { title: '朝阳大悦城旁 精装一居室 随时看房', author: '北京租房君', likes: 23, images: ['/posts/rent/rent0_0.jpg'] },
-  { title: '望京SOHO 日式ins风公寓 拎包入住', author: '好房推荐官', likes: 41, images: ['/posts/rent/rent1_0.jpg'] },
-  { title: '三里屯宝藏单间 采光超好！', author: '租房小助手', likes: 16, images: ['/posts/rent/rent2_0.jpg'] },
-  { title: '中关村创业公寓 月租3200起', author: '码农租房', likes: 37, images: ['/posts/rent/rent3_0.jpg'] },
-  { title: '西单大悦城旁 温馨小窝🛋️', author: '好运租房', likes: 29, images: ['/posts/rent/rent4_0.jpg'] },
+const HOME_POSTS = [
+  { title: '独居女孩的治愈小窝🏠 每个角落都是心动', author: '居家小达人', likes: 892, images: ['/posts/home/home0.jpg'] },
+  { title: '奶油风客厅布置 温柔到骨子里', author: '软装搭配师', likes: 743, images: ['/posts/home/home1.jpg'] },
 ]
 
-// 按比例穿插：美甲70% 宠物20% 租房10%
+const OUTFIT_POSTS = [
+  { title: '早秋穿搭 | 韩系慵懒风太绝了🧥', author: '穿搭博主CC', likes: 456, images: ['/posts/outfit/outfit0.jpg'] },
+  { title: '法式慵懒风 不费力的高级感', author: '巴黎女孩', likes: 678, images: ['/posts/outfit/outfit1.jpg'] },
+]
+
+const MOVIE_POSTS = [
+  { title: '一个人看电影才是最高级的独处🎬', author: '文艺青年', likes: 345, images: ['/posts/movie/movie0.jpg'] },
+]
+
+const LIFESTYLE_POSTS = [
+  { title: '咖啡拉花练习第100天☕ 终于成功！', author: '咖啡日记', likes: 523, images: ['/posts/lifestyle/coffee1.jpg'] },
+  { title: '周末下午茶 甜品治愈一切🍰', author: '甜食控', likes: 761, images: ['/posts/lifestyle/coffee2.jpg'] },
+]
+
+// 穿插比例：美甲25% 生活方式15% 家居15% 穿搭15% 电影10% 宠物20%
 function generatePosts(count) {
   const result = []
-  const pattern = ['nail', 'nail', 'nail', 'pet', 'nail', 'rent', 'nail', 'nail', 'nail', 'pet', 'nail']
-  const counters = { nail: 0, pet: 0, rent: 0 }
+  const pattern = ['lifestyle', 'outfit', 'nail', 'pet', 'home', 'movie', 'outfit', 'pet', 'nail', 'home', 'lifestyle', 'pet', 'outfit', 'nail', 'movie']
+  const counters = { nail: 0, pet: 0, home: 0, outfit: 0, movie: 0, lifestyle: 0 }
+  const poolMap = { nail: NAIL_POSTS, pet: PET_POSTS, home: HOME_POSTS, outfit: OUTFIT_POSTS, movie: MOVIE_POSTS, lifestyle: LIFESTYLE_POSTS }
+  const tagMap = { nail: '#美甲分享', pet: '#猫咪日常', home: '#家居生活', outfit: '#穿搭分享', movie: '#电影推荐', lifestyle: '#生活方式' }
 
   for (let i = 0; i < count; i++) {
     const type = pattern[i % pattern.length]
-    const pool = type === 'nail' ? NAIL_POSTS : type === 'pet' ? PET_POSTS : RENT_POSTS
+    const pool = poolMap[type]
     const idx = counters[type] % pool.length
     counters[type]++
     const p = pool[idx]
@@ -53,7 +62,7 @@ function generatePosts(count) {
       likes: p.likes + Math.floor(Math.random() * 20),
       images: p.images,
       content: p.title,
-      tags: type === 'nail' ? ['#美甲分享'] : type === 'pet' ? ['#猫咪日常'] : ['#租房'],
+      tags: [tagMap[type]],
       type,
     })
   }
@@ -125,13 +134,13 @@ export default function Feed({ onPost }) {
             { key: 'discover', label: '发现' },
             { key: 'nearby', label: '附近' },
           ].map(tab => (
-            <button key={tab.key} onClick={() => setActiveTab(tab.key)} className="relative pb-[4px]">
+            <button key={tab.key} onClick={() => setActiveTab(tab.key)} className="relative pb-[2px]">
               <span style={{ fontSize: 16, fontWeight: activeTab === tab.key ? 600 : 400 }}
                 className={activeTab === tab.key ? 'text-[#222]' : 'text-[#999]'}>
                 {tab.label}
               </span>
               {activeTab === tab.key && (
-                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[28px] h-[2px] rounded-full bg-[#FF2442]" />
+                <div className="absolute left-1/2 -translate-x-1/2 w-[28px] h-[2px] rounded-full bg-[#FF2442]" style={{ top: 'calc(100% + 2px)' }} />
               )}
             </button>
           ))}
@@ -172,7 +181,7 @@ export default function Feed({ onPost }) {
                     <div className="rounded-full bg-[#f5f5f5] flex items-center justify-center shrink-0 overflow-hidden"
                       style={{ width: `${S.authorAvatarSize}px`, height: `${S.authorAvatarSize}px` }}>
                       <span style={{ fontSize: Math.max(8, S.authorAvatarSize * 0.5) }}>
-                        {post.type === 'nail' ? '💅' : post.type === 'pet' ? '🐱' : '🏠'}
+                        {post.type === 'nail' ? '💅' : post.type === 'pet' ? '🐱' : post.type === 'home' ? '🏠' : post.type === 'outfit' ? '👗' : post.type === 'movie' ? '🎬' : '☕'}
                       </span>
                     </div>
                     <span className="text-[#999] text-[11px] truncate">{post.author}</span>
