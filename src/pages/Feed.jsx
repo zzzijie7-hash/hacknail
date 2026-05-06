@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect } from 'react'
+import { useState, useRef, useCallback, useEffect, useLayoutEffect } from 'react'
 
 // ── 动态数据（从 manifest.json 加载）─────────────────
 const TAG_MAP = { nail: '#美甲分享', pet: '#毛孩子日常', rental: '#租房日记', portrait: '#写真约拍' }
@@ -101,7 +101,7 @@ export default function Feed({ onPost, onAIChat, onUpload }) {
   }, [loadMore])
 
   return (
-    <div className="min-h-screen bg-[#FAFAFA] relative overflow-x-hidden flex flex-col items-center" style={{ fontFamily: "-apple-system, 'PingFang SC', sans-serif" }}>
+    <div className="min-h-screen bg-[#FAFAFA] flex flex-col items-center" style={{ fontFamily: "-apple-system, 'PingFang SC', sans-serif", position:'relative' }}>
       <div className="w-full max-w-[375px] relative">
       {/* 导航栏 */}
       <div className="bg-white flex items-center h-[44px] px-[16px] sticky top-0 z-20">
@@ -158,7 +158,7 @@ export default function Feed({ onPost, onAIChat, onUpload }) {
                     <div className="rounded-full bg-[#f5f5f5] flex items-center justify-center shrink-0 overflow-hidden"
                       style={{ width: `${S.authorAvatarSize}px`, height: `${S.authorAvatarSize}px` }}>
                       <span style={{ fontSize: Math.max(8, S.authorAvatarSize * 0.5) }}>
-                        {post.type === 'nail' ? '💅' : post.type === 'pet' ? '🐱' : post.type === 'home' ? '🏠' : post.type === 'outfit' ? '👗' : post.type === 'movie' ? '🎬' : '☕'}
+                        {post.type === 'nail' ? '💅' : post.type === 'pet' ? '🐱' : post.type === 'rental' ? '🏠' : post.type === 'portrait' ? '📷' : '✨'}
                       </span>
                     </div>
                     <span className="text-[#999] text-[11px] truncate">{post.author}</span>
@@ -197,7 +197,12 @@ export default function Feed({ onPost, onAIChat, onUpload }) {
         </div>
         <div className="flex justify-center pb-[8px]"><div className="w-[139px] h-[5px] rounded-[2.5px] bg-black" /></div>
       </div>
+      {/* 浮动上传入口 — 在 375px 内容区右侧外面 */}
+      <button onClick={onUpload}
+        className="absolute right-[-40px] bottom-[120px] w-[32px] h-[32px] bg-white/90 rounded-r-[8px] shadow-md z-40 flex items-center justify-center border border-[#eee] border-l-0 active:scale-95 transition-transform"
+        title="素材上传">
+        <span style={{ fontSize:16, color:'rgba(0,0,0,0.4)' }}>+</span>
+      </button>
       </div>
-    </div>
   )
 }
