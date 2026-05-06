@@ -1,48 +1,24 @@
 import { useState, useRef, useEffect } from 'react'
+import { AGENTS } from '../config/agents'
 
-// 三张功能卡片数据
-const FEATURE_CARDS = [
-  {
-    id: 'nail',
-    emoji: '💅',
-    title: '美甲试戴',
-    desc: 'AI 智能试戴，看中就试',
-    gradient: 'from-[#FF6B9D] to-[#FF2442]',
-    rotation: '-6deg',
-    offsetY: '8px',
-  },
-  {
-    id: 'floorplan',
-    emoji: '🏠',
-    title: '户型还原',
-    desc: '租房户型图，一目了然',
-    gradient: 'from-[#4ECDC4] to-[#2BAE66]',
-    rotation: '2deg',
-    offsetY: '0px',
-  },
-  {
-    id: 'pet',
-    emoji: '👗',
-    title: '宠物穿搭',
-    desc: '毛孩子也要穿得好看',
-    gradient: 'from-[#A78BFA] to-[#7C3AED]',
-    rotation: '7deg',
-    offsetY: '14px',
-  },
-]
+// 三张功能卡片 — 从 AGENTS 配置取前三个
+const agentList = Object.entries(AGENTS)
+const FEATURE_CARDS = agentList.slice(0, 3).map(([id, a]) => ({
+  id, emoji: a.icon, title: a.label, desc: a.subLabel,
+  gradient: a.gradient, rotation: a.rotation, offsetY: a.offsetY,
+}))
 
 const QUICK_ACTIONS = [
-  { icon: '💅', label: '美甲试戴', action: 'nail' },
-  { icon: '🏠', label: '户型还原', action: 'floorplan' },
-  { icon: '👗', label: '宠物穿搭', action: 'pet' },
+  ...agentList.map(([id, a]) => ({ icon: a.icon, label: a.label, action: id })),
   { icon: '✨', label: '随便聊聊', action: 'chat' },
 ]
 
 const AI_REPLIES = {
   'nail': '好的！美甲试戴走起 💅\n\n我可以帮你：\n• 挑选适合你的款式\n• AI 试戴看效果\n• 推荐附近美甲店\n\n点击下方「试戴」直接开始吧～',
-  'floorplan': '户型还原来啦 🏠\n\n给我一个租房帖子，我来帮你：\n• 从图片推断户型布局\n• 生成简洁户型图\n• 看清房间朝向和大小',
-  'pet': '宠物穿搭安排 👗\n\n上传毛孩子的照片，我来帮你：\n• AI 试穿不同服装\n• 推荐适合的穿搭风格\n• 生成可爱效果图',
-  'chat': '嗨～想聊什么都可以！\n\n我是点点，你的生活小助手 ✨\n美甲、租房、宠物穿搭，都能找我～',
+  'rental': '户型还原来啦 🏠\n\n看到租房帖子就来试：\n• 从图片分析户型\n• 生成简洁户型图\n• 看清房间布局\n\n给我一个租房帖子的链接试试～',
+  'portrait': '写真风格推荐来啦 📷\n\n我可以帮你：\n• 识别写真风格\n• 推荐相似风格\n• 找到约拍资源',
+  'pet': '宠物穿搭安排 🐾\n\n上传毛孩子的照片：\n• AI 试穿不同装扮\n• 推荐好看的宠物服饰\n• 生成可爱效果图',
+  'chat': '嗨～想聊什么都可以！\n\n我是点点，你的生活小助手 ✨\n美甲、租房、写真、宠物穿搭，都能找我～',
 }
 
 export default function AIChat({ onBack, onTryOn }) {
@@ -73,7 +49,8 @@ export default function AIChat({ onBack, onTryOn }) {
   }
 
   const handleCardClick = (card) => {
-    if (card.id === 'nail') {
+    const agent = AGENTS[card.id]
+    if (agent?.page) {
       onTryOn()
       return
     }
@@ -167,7 +144,11 @@ export default function AIChat({ onBack, onTryOn }) {
           <div className="flex gap-[8px] px-[16px] pt-[10px] pb-[6px] overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
             {QUICK_ACTIONS.map((action) => (
               <button key={action.label}
-                onClick={() => action.action === 'nail' ? onTryOn() : sendMessage(action.action)}
+                onClick={() => {
+                  const agent = AGENTS[action.action]
+                  if (agent?.page) { onTryOn(); return }
+                  sendMessage(action.action)
+                }}
                 className="shrink-0 flex items-center gap-[4px] px-[12px] py-[6px] rounded-[16px] bg-[#f5f5f5] text-[rgba(0,0,0,0.6)] text-[12px] active:scale-95 transition-transform hover:bg-[#eee]">
                 <span>{action.icon}</span>
                 <span>{action.label}</span>

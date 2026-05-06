@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { getAgent } from '../config/agents'
 
 // 间距调节参数
 const defaults = {
@@ -97,12 +98,18 @@ export default function PostDetail({ post, onBack, onTryOn }) {
               ))}
             </div>
           )}
-          {/* 智能试戴按钮 */}
-          <button onClick={() => onTryOn(post)}
-            className="absolute shrink-0 text-white text-[13px] font-medium flex items-center justify-center rounded-[15px] bg-[#FF2442] z-10"
-            style={{ bottom: `${s.tryOnBottom}px`, right: `${s.tryOnRight}px`, height: `${s.tryOnH}px`, padding: `0 ${s.tryOnPx}px` }}>
-            智能试戴
-          </button>
+          {/* Agent 入口按钮 — 按帖子类别动态切换 */}
+          {(() => {
+            const agent = getAgent(post.type)
+            if (!agent.label) return null
+            return (
+              <button onClick={() => onTryOn(post)}
+                className="absolute shrink-0 text-white text-[13px] font-medium flex items-center justify-center rounded-[15px] bg-[#FF2442] z-10"
+                style={{ bottom: `${s.tryOnBottom}px`, right: `${s.tryOnRight}px`, height: `${s.tryOnH}px`, padding: `0 ${s.tryOnPx}px` }}>
+                {agent.icon} {agent.label}
+              </button>
+            )
+          })()}
         </div>
 
         {/* 正文 */}

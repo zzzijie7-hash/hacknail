@@ -1,57 +1,80 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 
-// ── 真实帖子数据（本地图片）──────────────────────────────────
-const V = '?v=2'
+// ── 真实帖子数据 ──────────────────────────────────
+const V = '?v=4'
 const NAIL_POSTS = [
-  { title: 'nail share 💅 海莉比伯同款蹭粉美甲', author: 'seazacc', likes: 43,
-    images: ['/posts/nail/post0_0.jpg'+V, '/posts/nail/post0_1.jpg'+V, '/posts/nail/post0_2.jpg'+V] },
-  { title: '蹭粉就是这样蹭的！闪到没朋友✨', author: '指尖DESIGN', likes: 59,
-    images: ['/posts/nail/post1_0.jpg'+V, '/posts/nail/post1_1.jpg'+V, '/posts/nail/post1_2.jpg'+V, '/posts/nail/post1_3.jpg'+V] },
-  { title: '皮粉色法式➕蹭粉海莉💅🏻', author: 'Ranx Nail', likes: 9,
-    images: ['/posts/nail/post2_0.jpg'+V, '/posts/nail/post2_1.jpg'+V, '/posts/nail/post2_2.jpg'+V, '/posts/nail/post2_3.jpg'+V] },
-  { title: '白月光美甲 春天必做款🤍', author: '晴子大姐姐', likes: 28,
-    images: ['/posts/nail/post3_0.jpg'+V, '/posts/nail/post3_1.jpg'+V, '/posts/nail/post3_2.jpg'+V, '/posts/nail/post3_3.jpg'+V] },
-  { title: 'mmeng｜简约海莉美甲🤍', author: 'mmdaily', likes: 82,
-    images: ['/posts/nail/post4_0.jpg'+V, '/posts/nail/post4_1.jpg'+V, '/posts/nail/post4_2.jpg'+V, '/posts/nail/post4_3.jpg'+V] },
-  { title: '25年度美甲合集₊˚⊹⋆ 每款都想做！', author: 'miyaaa', likes: 84,
-    images: ['/posts/nail/post5_0.jpg'+V, '/posts/nail/post5_1.jpg'+V, '/posts/nail/post5_2.jpg'+V, '/posts/nail/post5_3.jpg'+V] },
+  { title: '极光镭射美甲 光线下绝了✨', author: '闪闪惹人爱', likes: 326,
+    images: ['/posts/nail/post0_0.jpg'+V] },
+  { title: '法式裸色猫眼 温柔到骨子里🤍', author: 'nana美甲日记', likes: 512,
+    images: ['/posts/nail/post1_0.jpg'+V, '/posts/nail/post1_1.jpg'+V, '/posts/nail/post1_2.jpg'+V] },
+  { title: '果冻透色甲 夏天就做这一款', author: 'CrystalNail', likes: 198,
+    images: ['/posts/nail/post2_0.jpg'+V, '/posts/nail/post2_1.jpg'+V, '/posts/nail/post2_2.jpg'+V] },
+  { title: '玫瑰金渐变 把手变得好白🌹', author: '美甲师CC', likes: 437,
+    images: ['/posts/nail/post3_0.jpg'+V, '/posts/nail/post3_1.jpg'+V] },
+  { title: '立体水钻方头 气场全开女王范', author: '女王指艺', likes: 689,
+    images: ['/posts/nail/post4_0.jpg'+V, '/posts/nail/post4_1.jpg'+V, '/posts/nail/post4_2.jpg'+V] },
+  { title: '莫兰迪雾霾蓝 低调高级感', author: 'ColorLab', likes: 273,
+    images: ['/posts/nail/post5_0.jpg'+V, '/posts/nail/post5_1.jpg'+V] },
+  { title: '蝴蝶结立体甲 约会必备款🎀', author: '甜心美甲屋', likes: 841,
+    images: ['/posts/nail/post6_0.jpg'+V] },
+  { title: '黑色蕾丝镂空 暗黑公主降临🖤', author: 'DarkNails', likes: 556,
+    images: ['/posts/nail/post7_0.jpg'+V, '/posts/nail/post7_1.jpg'+V] },
+  { title: '碎花田园风 春日限定', author: '花花指尖', likes: 365,
+    images: ['/posts/nail/post8_0.jpg'+V, '/posts/nail/post8_1.jpg'+V] },
+  { title: '金箔大理石纹 轻奢名媛风', author: '名媛指艺', likes: 492,
+    images: ['/posts/nail/post9_0.jpg'+V, '/posts/nail/post9_1.jpg'+V] },
 ]
 
 const PET_POSTS = [
-  { title: '我家猫又双叒叕在卖萌了🥺', author: '猫猫头', likes: 312, images: ['/posts/pet/cat0.jpg'] },
-  { title: '橘猫日常 今天也要黏着你🐱', author: '橘座日记', likes: 487, images: ['/posts/pet/cat1.jpg'] },
+  { title: '小三花上线 今天也要吸猫🐱', author: '猫奴小日记', likes: 458,
+    images: ['/posts/pet/pet0_0.jpg'+V, '/posts/pet/pet0_1.jpg'+V, '/posts/pet/pet0_2.jpg'+V] },
+  { title: '我家柯基今天又卖萌了🥺', author: '柯基王子', likes: 892,
+    images: ['/posts/pet/pet1_0.jpg'+V, '/posts/pet/pet1_1.jpg'+V, '/posts/pet/pet1_2.jpg'+V, '/posts/pet/pet1_3.jpg'+V] },
+  { title: '布偶猫日常美照大放送', author: '布偶星球', likes: 634,
+    images: ['/posts/pet/pet2_0.jpg'+V, '/posts/pet/pet2_1.jpg'+V, '/posts/pet/pet2_2.jpg'+V] },
+  { title: '柴犬的100种表情包合集', author: '柴柴君', likes: 521,
+    images: ['/posts/pet/pet3_0.jpg'+V, '/posts/pet/pet3_1.jpg'+V, '/posts/pet/pet3_2.jpg'+V] },
+  { title: '金毛的大耳朵太治愈了🦮', author: '金毛日常', likes: 776,
+    images: ['/posts/pet/pet4_0.jpg'+V, '/posts/pet/pet4_1.jpg'+V, '/posts/pet/pet4_2.jpg'+V] },
 ]
 
-const HOME_POSTS = [
-  { title: '独居女孩的治愈小窝🏠 每个角落都是心动', author: '居家小达人', likes: 892, images: ['/posts/home/home0.jpg'] },
-  { title: '奶油风客厅布置 温柔到骨子里', author: '软装搭配师', likes: 743, images: ['/posts/home/home1.jpg'] },
+const RENTAL_POSTS = [
+  { title: '一室户｜独居女孩的治愈小窝🏠', author: '居家小达人', likes: 892,
+    images: ['/posts/rental/rental0_0.jpg'+V, '/posts/rental/rental0_1.jpg'+V, '/posts/rental/rental0_2.jpg'+V, '/posts/rental/rental0_3.jpg'+V, '/posts/rental/rental0_4.jpg'+V] },
+  { title: '整租两居室 朝南采光好 ☀️', author: '租房日记', likes: 645,
+    images: ['/posts/rental/rental1_0.jpg'+V, '/posts/rental/rental1_1.jpg'+V, '/posts/rental/rental1_2.jpg'+V, '/posts/rental/rental1_3.jpg'+V, '/posts/rental/rental1_4.jpg'+V, '/posts/rental/rental1_5.jpg'+V] },
+  { title: '奶油风公寓｜性价比之王', author: '租房小能手', likes: 523,
+    images: ['/posts/rental/rental2_0.jpg'+V, '/posts/rental/rental2_1.jpg'+V, '/posts/rental/rental2_2.jpg'+V, '/posts/rental/rental2_3.jpg'+V, '/posts/rental/rental2_4.jpg'+V] },
+  { title: 'Loft 绝美装修｜拎包入住', author: '看房日记', likes: 938,
+    images: ['/posts/rental/rental3_0.jpg'+V, '/posts/rental/rental3_1.jpg'+V, '/posts/rental/rental3_2.jpg'+V, '/posts/rental/rental3_3.jpg'+V, '/posts/rental/rental3_4.jpg'+V, '/posts/rental/rental3_5.jpg'+V] },
 ]
 
-const OUTFIT_POSTS = [
-  { title: '早秋穿搭 | 韩系慵懒风太绝了🧥', author: '穿搭博主CC', likes: 456, images: ['/posts/outfit/outfit0.jpg'] },
-  { title: '法式慵懒风 不费力的高级感', author: '巴黎女孩', likes: 678, images: ['/posts/outfit/outfit1.jpg'] },
+const PORTRAIT_POSTS = [
+  { title: '民国风写真｜穿越回老上海', author: '复古摄影馆', likes: 723,
+    images: ['/posts/portrait/portrait0_0.jpg'+V, '/posts/portrait/portrait0_1.jpg'+V, '/posts/portrait/portrait0_2.jpg'+V, '/posts/portrait/portrait0_3.jpg'+V] },
+  { title: '氛围感头像照 姐妹们给我冲📷', author: '拍照姿势大全', likes: 891,
+    images: ['/posts/portrait/portrait1_0.jpg'+V, '/posts/portrait/portrait1_1.jpg'+V, '/posts/portrait/portrait1_2.jpg'+V] },
+  { title: '草地野餐拍照指南🍃', author: '摄影爱好者', likes: 567,
+    images: ['/posts/portrait/portrait2_0.jpg'+V, '/posts/portrait/portrait2_1.jpg'+V, '/posts/portrait/portrait2_2.jpg'+V] },
+  { title: '银杏季人像写真全攻略', author: '约拍日记', likes: 445,
+    images: ['/posts/portrait/portrait3_0.jpg'+V, '/posts/portrait/portrait3_1.jpg'+V, '/posts/portrait/portrait3_2.jpg'+V] },
+  { title: '宿舍也能出片！低成本写真', author: '学生党拍照', likes: 678,
+    images: ['/posts/portrait/portrait4_0.jpg'+V, '/posts/portrait/portrait4_1.jpg'+V] },
 ]
 
-const MOVIE_POSTS = [
-  { title: '一个人看电影才是最高级的独处🎬', author: '文艺青年', likes: 345, images: ['/posts/movie/movie0.jpg'] },
-]
+// ── 类别流水线 ──────────────────────────────────────
+const PATTERN  = ['nail', 'pet', 'rental', 'portrait', 'nail', 'rental', 'pet', 'portrait', 'nail', 'pet', 'rental', 'portrait']
+const TAG_MAP  = { nail: '#美甲分享', pet: '#毛孩子日常', rental: '#租房日记', portrait: '#写真约拍' }
+const POOL_MAP = { nail: NAIL_POSTS, pet: PET_POSTS, rental: RENTAL_POSTS, portrait: PORTRAIT_POSTS }
 
-const LIFESTYLE_POSTS = [
-  { title: '咖啡拉花练习第100天☕ 终于成功！', author: '咖啡日记', likes: 523, images: ['/posts/lifestyle/coffee1.jpg'] },
-  { title: '周末下午茶 甜品治愈一切🍰', author: '甜食控', likes: 761, images: ['/posts/lifestyle/coffee2.jpg'] },
-]
-
-// 穿插比例：美甲25% 生活方式15% 家居15% 穿搭15% 电影10% 宠物20%
 function generatePosts(count) {
   const result = []
-  const pattern = ['lifestyle', 'outfit', 'nail', 'pet', 'home', 'movie', 'outfit', 'pet', 'nail', 'home', 'lifestyle', 'pet', 'outfit', 'nail', 'movie']
-  const counters = { nail: 0, pet: 0, home: 0, outfit: 0, movie: 0, lifestyle: 0 }
-  const poolMap = { nail: NAIL_POSTS, pet: PET_POSTS, home: HOME_POSTS, outfit: OUTFIT_POSTS, movie: MOVIE_POSTS, lifestyle: LIFESTYLE_POSTS }
-  const tagMap = { nail: '#美甲分享', pet: '#猫咪日常', home: '#家居生活', outfit: '#穿搭分享', movie: '#电影推荐', lifestyle: '#生活方式' }
+  const counters = {}
+  Object.keys(POOL_MAP).forEach(k => { counters[k] = 0 })
 
   for (let i = 0; i < count; i++) {
-    const type = pattern[i % pattern.length]
-    const pool = poolMap[type]
+    const type = PATTERN[i % PATTERN.length]
+    const pool = POOL_MAP[type]
     const idx = counters[type] % pool.length
     counters[type]++
     const p = pool[idx]
@@ -62,7 +85,7 @@ function generatePosts(count) {
       likes: p.likes + Math.floor(Math.random() * 20),
       images: p.images,
       content: p.title,
-      tags: [tagMap[type]],
+      tags: [TAG_MAP[type]],
       type,
     })
   }
