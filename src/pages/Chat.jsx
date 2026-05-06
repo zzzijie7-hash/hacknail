@@ -8,7 +8,7 @@ const AUTO_REPLIES = [
   '这款好看！我们店 148 就能做，来之前提前说一声就行',
 ]
 
-export default function Chat({ onBack, shop, nailData }) {
+export default function Chat({ onBack, shop, nailData, onSmartWear }) {
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [typing, setTyping] = useState(false)
@@ -114,12 +114,15 @@ export default function Chat({ onBack, shop, nailData }) {
         {[
           { label: '相册', w: 52 },
           { label: '拍摄', w: 75 },
+          { label: '预约到店', w: 75, highlight: true },
           { label: '位置', w: 75 },
           { label: '红包', w: 52 },
           { label: '转账', w: 63 },
           { label: '更多', w: 75 },
         ].map((item) => (
-          <div key={item.label} className="h-[30px] rounded-[8px] bg-[#F5F5F5] flex items-center justify-center text-[#666] text-[12px] shrink-0"
+          <div key={item.label}
+            className={`h-[30px] rounded-[8px] flex items-center justify-center text-[12px] shrink-0 active:scale-95 transition-transform
+              ${item.highlight ? 'bg-[#FF2442] text-white font-medium' : 'bg-[#F5F5F5] text-[#666]'}`}
             style={{ width: `${item.w}px`, minWidth: `${item.w}px` }}>
             {item.label}
           </div>

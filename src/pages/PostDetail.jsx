@@ -1,39 +1,71 @@
 import { useState } from 'react'
 
+// 间距调节参数
+const defaults = {
+  navH: 61, navPx: 14, navGap: 10,
+  avatarSize: 34, followW: 52, followH: 26,
+  imgH: 477, imgCounterTop: 10, imgCounterRight: 10,
+  imgDotBottom: 12, imgDotGap: 5, imgDotSize: 6,
+  tryOnBottom: 12, tryOnRight: 12, tryOnH: 30, tryOnPx: 14,
+  contentPx: 14, contentPt: 14, contentPb: 10,
+  titleFs: 17, titleLh: 24, titleMb: 8,
+  textFs: 15, textLh: 23, textMb: 10,
+  tagFs: 14, tagGap: 4,
+  dividerH: 2,
+  commentPx: 14, commentPy: 12, commentMb: 14,
+  commentAvatarSize: 26, commentGap: 10,
+  bottomH: 53, bottomPx: 14,
+  inputH: 34, inputRadius: 17,
+  iconGap: 20, iconSize: 28,
+}
+
 export default function PostDetail({ post, onBack, onTryOn }) {
   const [liked, setLiked] = useState(false)
   const [collected, setCollected] = useState(false)
   const [currentImg, setCurrentImg] = useState(0)
+  const [showPanel, setShowPanel] = useState(true)
+  const [s, setS] = useState(defaults)
 
   if (!post) return null
   const images = post.images || []
   const commentCount = Math.floor(post.likes * 0.05) + Math.floor(Math.random() * 50)
 
+  const set = (k, v) => setS(prev => ({ ...prev, [k]: typeof v === 'function' ? v(prev[k]) : v }))
+
+  const Slider = ({ label, k, min = 0, max = 80, step = 1 }) => (
+    <div className="flex items-center gap-2 text-[11px]">
+      <span className="w-[80px] text-right text-[#666] shrink-0">{label}</span>
+      <input type="range" min={min} max={max} step={step} value={s[k]}
+        onChange={e => set(k, +e.target.value)}
+        className="flex-1 h-[3px] appearance-none bg-[#ddd] rounded [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-[14px] [&::-webkit-slider-thumb]:h-[14px] [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[#FF2442] [&::-webkit-slider-thumb]:cursor-pointer" />
+      <span className="w-[32px] text-[#333]">{s[k]}</span>
+    </div>
+  )
+
   return (
     <div className="min-h-screen bg-[#FAFAFA] relative overflow-x-hidden flex flex-col items-center" style={{ fontFamily: "-apple-system, 'PingFang SC', sans-serif" }}>
-      <div className="w-full max-w-[375px] min-h-screen bg-white relative">
+      <div className="w-full max-w-[375px] min-h-screen bg-white relative" style={{ paddingBottom: `${s.bottomH + 20}px` }}>
 
-        {/* 顶栏 */}
-        <div className="flex items-center px-[16px] h-[44px] gap-[10px] sticky top-0 bg-white z-20">
+        {/* 导航栏 */}
+        <div className="flex items-center sticky top-0 bg-white z-20"
+          style={{ padding: `0 ${s.navPx}px`, height: `${s.navH}px`, gap: `${s.navGap}px` }}>
           <button onClick={onBack} className="shrink-0">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#222" strokeWidth="2.5" strokeLinecap="round">
-              <polyline points="15 18 9 12 15 6"/>
-            </svg>
+            <img src="/icons/back.svg" width={22} height={22} alt="back" />
           </button>
-          <div className="rounded-full bg-[#f5f5f5] flex items-center justify-center shrink-0 w-[34px] h-[34px]">
+          <div className="rounded-full bg-[#f5f5f5] flex items-center justify-center shrink-0"
+            style={{ width: `${s.avatarSize}px`, height: `${s.avatarSize}px` }}>
             <span style={{ fontSize: 14 }}>{post.avatar || '💅'}</span>
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-[#222] text-[15px] font-medium truncate leading-tight">{post.author}</p>
-            <p className="text-[#999] text-[11px] leading-tight">3小时前</p>
+            <p className="text-[rgba(0,0,0,0.8)] text-[15px] font-medium truncate leading-tight">{post.author}</p>
+            <p className="text-[rgba(0,0,0,0.3)] text-[11px] leading-tight">3小时前</p>
           </div>
-          <button className="shrink-0 text-white text-[13px] font-medium flex items-center justify-center w-[53px] h-[27px] rounded-[13.5px] bg-[#FF2442]">
+          <button className="shrink-0 text-[#FF2442] text-[13px] font-medium flex items-center justify-center rounded-[13px] border border-[#FF2442]"
+            style={{ width: `${s.followW}px`, height: `${s.followH}px` }}>
             关注
           </button>
           <button className="shrink-0 ml-[4px]">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="#ccc">
-              <circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/>
-            </svg>
+            <img src="/icons/share.svg" width={22} height={22} alt="share" />
           </button>
         </div>
 
@@ -46,98 +78,170 @@ export default function PostDetail({ post, onBack, onTryOn }) {
             if (diff > 40) setCurrentImg(i => Math.max(i - 1, 0))
           }}>
           {images.length > 0 ? (
-            <img src={images[currentImg]} alt="" className="w-full object-contain max-h-[477px]"
+            <img src={images[currentImg]} alt="" className="w-full object-contain"
+              style={{ height: `${s.imgH}px` }}
               onError={(e) => { e.target.style.display = 'none' }} />
           ) : null}
           {images.length > 1 && (
-            <div className="absolute px-[8px] py-[3px] rounded-[11px] bg-[#303034]/50 text-white text-[11px] top-[10px] right-[10px]">
+            <div className="absolute px-[8px] py-[3px] rounded-[11px] bg-[#303034]/50 text-white text-[11px]"
+              style={{ top: `${s.imgCounterTop}px`, right: `${s.imgCounterRight}px` }}>
               {currentImg + 1}/{images.length}
             </div>
           )}
           {images.length > 1 && (
-            <div className="absolute left-1/2 -translate-x-1/2 flex gap-[5px] bottom-[12px]">
+            <div className="absolute left-1/2 -translate-x-1/2 flex"
+              style={{ gap: `${s.imgDotGap}px`, bottom: `${s.imgDotBottom}px` }}>
               {images.map((_, i) => (
-                <div key={i} className={`w-[6px] h-[6px] rounded-full transition-colors ${i === currentImg ? 'bg-[#FF2442]' : 'bg-[#303034]/20'}`} />
+                <div key={i} className={`rounded-full transition-colors ${i === currentImg ? 'bg-[#FF2442]' : 'bg-[#303034]/20'}`}
+                  style={{ width: `${s.imgDotSize}px`, height: `${s.imgDotSize}px` }} />
               ))}
             </div>
           )}
+          {/* 智能试戴按钮 */}
+          <button onClick={() => onTryOn(post)}
+            className="absolute shrink-0 text-white text-[13px] font-medium flex items-center justify-center rounded-[15px] bg-[#FF2442] z-10"
+            style={{ bottom: `${s.tryOnBottom}px`, right: `${s.tryOnRight}px`, height: `${s.tryOnH}px`, padding: `0 ${s.tryOnPx}px` }}>
+            智能试戴
+          </button>
         </div>
 
         {/* 正文 */}
-        <div className="px-[16px] pt-[14px] pb-[10px]">
-          <h2 className="text-[#222] text-[17px] font-semibold leading-[24px] mb-[8px]">{post.title}</h2>
-          <p className="text-[#333] text-[15px] leading-[23px] mb-[10px]">{post.content}</p>
-          <div className="flex flex-wrap gap-[4px]">
+        <div style={{ padding: `${s.contentPt}px ${s.contentPx}px ${s.contentPb}px` }}>
+          <h2 className="text-[rgba(0,0,0,0.8)] font-semibold"
+            style={{ fontSize: `${s.titleFs}px`, lineHeight: `${s.titleLh}px`, marginBottom: `${s.titleMb}px` }}>{post.title}</h2>
+          <p className="text-[rgba(0,0,0,0.6)]"
+            style={{ fontSize: `${s.textFs}px`, lineHeight: `${s.textLh}px`, marginBottom: `${s.textMb}px` }}>{post.content}</p>
+          <div className="flex flex-wrap" style={{ gap: `${s.tagGap}px` }}>
             {(post.tags || []).map((tag) => (
-              <span key={tag} className="text-[#576b95] text-[14px]">{tag}</span>
+              <span key={tag} className="text-[#133667]" style={{ fontSize: `${s.tagFs}px` }}>{tag}</span>
             ))}
           </div>
         </div>
 
         {/* 分割线 */}
-        <div className="h-[8px] bg-[#f5f5f5]" />
+        <div style={{ height: `${s.dividerH}px` }} className="bg-[#f5f5f5]" />
 
         {/* 评论区 */}
-        <div className="px-[16px] py-[12px]">
-          <p className="text-[#999] text-[14px] mb-[14px]">共 {commentCount} 条评论</p>
+        <div style={{ padding: `${s.commentPy}px ${s.commentPx}px` }}>
+          <p className="text-[rgba(0,0,0,0.3)] text-[14px]" style={{ marginBottom: `${s.commentMb}px` }}>共 {commentCount} 条评论</p>
           {[
             { avatar: '🦋', name: '蝴蝶结女孩', text: '好好看！求链接', time: '2小时前', color: '#42C9A0' },
             { avatar: '💫', name: '甜心美甲', text: '这个颜色太显白了，黄皮也适合吗？', time: '1小时前', color: '#FF9A9E' },
             { avatar: '🍀', name: '美甲小能手', text: '同款！我也刚做，真的绝', time: '45分钟前', color: '#A8E6CF' },
           ].map((c, i) => (
-            <div key={i} className="flex gap-[10px] mb-[14px]">
-              <div className="rounded-full flex items-center justify-center shrink-0 w-[26px] h-[26px]" style={{ background: c.color }}>
+            <div key={i} className="flex" style={{ gap: `${s.commentGap}px`, marginBottom: `${s.commentMb}px` }}>
+              <div className="rounded-full flex items-center justify-center shrink-0"
+                style={{ background: c.color, width: `${s.commentAvatarSize}px`, height: `${s.commentAvatarSize}px` }}>
                 <span className="text-white text-[8px]">{c.avatar}</span>
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-[14px] leading-[20px]"><span className="text-[#576b95] font-medium">{c.name}</span> <span className="text-[#333]">{c.text}</span></p>
-                <p className="text-[#bbb] text-[12px] mt-[2px]">{c.time}</p>
+                <p className="text-[14px] leading-[20px]"><span className="text-[#576b95] font-medium">{c.name}</span> <span className="text-[rgba(0,0,0,0.8)]">{c.text}</span></p>
+                <p className="text-[rgba(0,0,0,0.3)] text-[12px] mt-[2px]">{c.time}</p>
               </div>
             </div>
           ))}
         </div>
 
-        {/* 互动栏 */}
-        <div className="border-t border-[#f5f5f5] flex items-center px-[16px] py-[12px] gap-[24px]">
-          <button onClick={() => setLiked(!liked)} className="flex items-center gap-[4px]">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill={liked ? '#FF2442' : 'none'} stroke={liked ? '#FF2442' : '#999'} strokeWidth="1.8">
-              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-            </svg>
-            <span className={`text-[13px] ${liked ? 'text-[#FF2442]' : 'text-[#999]'}`}>{post.likes + (liked ? 1 : 0)}</span>
-          </button>
-          <div className="flex items-center gap-[4px]">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-            </svg>
-            <span className="text-[#999] text-[13px]">{commentCount}</span>
+        {/* 底部栏 */}
+        <div className="fixed bottom-0 left-1/2 -translate-x-1/2 max-w-[375px] w-full bg-white border-t border-[rgba(0,0,0,0.08)] flex items-center z-10"
+          style={{ padding: `0 ${s.bottomPx}px`, height: `${s.bottomH}px`, paddingBottom: 'max(10px, env(safe-area-inset-bottom))' }}>
+          <div className="flex-1 bg-[#303034]/[0.05] flex items-center px-[14px]"
+            style={{ height: `${s.inputH}px`, borderRadius: `${s.inputRadius}px` }}>
+            <img src="/icons/edit.svg" width={16} height={16} alt="edit" style={{ marginLeft: '8px', marginRight: '6px' }} />
+            <span className="text-[rgba(0,0,0,0.45)] text-[14px]">说点什么…</span>
           </div>
-          <button onClick={() => setCollected(!collected)} className="flex items-center gap-[4px]">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill={collected ? '#ffc107' : 'none'} stroke={collected ? '#ffc107' : '#999'} strokeWidth="1.8">
-              <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
-            </svg>
-            <span className={`text-[13px] ${collected ? 'text-[#ffc107]' : 'text-[#999]'}`}>{collected ? '已收藏' : '收藏'}</span>
-          </button>
-          <div className="flex items-center gap-[4px] ml-auto">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/>
-            </svg>
-            <span className="text-[#999] text-[13px]">分享</span>
+          <div className="flex items-center" style={{ gap: `${s.iconGap}px`, marginLeft: '16px' }}>
+            <button onClick={() => setLiked(!liked)} className="flex items-center gap-[2px]">
+              <img src="/icons/like.svg" width={s.iconSize} height={s.iconSize} alt="like"
+                style={{ filter: liked ? 'invert(25%) sepia(96%) saturate(7468%) hue-rotate(341deg) brightness(97%) contrast(110%)' : 'none' }} />
+              <span className={`text-[13px] ${liked ? 'text-[#FF2442]' : 'text-[rgba(0,0,0,0.8)]'}`}>{post.likes + (liked ? 1 : 0)}</span>
+            </button>
+            <div className="flex items-center gap-[2px]">
+              <img src="/icons/chat.svg" width={s.iconSize} height={s.iconSize} alt="chat" />
+              <span className="text-[rgba(0,0,0,0.45)] text-[13px]">{commentCount}</span>
+            </div>
+            <button onClick={() => setCollected(!collected)} className="flex items-center gap-[2px]">
+              <img src="/icons/collect.svg" width={s.iconSize} height={s.iconSize} alt="collect"
+                style={{ filter: collected ? 'invert(70%) sepia(89%) saturate(456%) hue-rotate(358deg) brightness(103%) contrast(103%)' : 'none' }} />
+              <span className={`text-[13px] ${collected ? 'text-[#ffc107]' : 'text-[rgba(0,0,0,0.8)]'}`}>{collected ? '已收藏' : post.collects || 128}</span>
+            </button>
           </div>
-        </div>
-
-        {/* 底部悬浮栏 */}
-        <div className="fixed bottom-0 left-1/2 -translate-x-1/2 max-w-[375px] w-full bg-white border-t border-[#eee] px-[14px] flex items-center z-10 h-[53px]"
-          style={{ paddingBottom: 'max(10px, env(safe-area-inset-bottom))' }}>
-          <div className="flex-1 bg-[#303034]/[0.05] flex items-center px-[14px] h-[34px] rounded-[17px]">
-            <span className="text-[#999] text-[14px]">说点什么…</span>
-          </div>
-          <button onClick={() => onTryOn(post)}
-            className="shrink-0 text-white text-[14px] font-medium flex items-center justify-center h-[34px] rounded-[17px] bg-[#FF2442] px-[16px] ml-[10px]">
-            智能试戴
-          </button>
         </div>
 
       </div>
+
+      {/* 间距调节面板 */}
+      {showPanel && (
+        <div className="fixed top-[60px] right-0 w-[260px] bg-white/95 backdrop-blur-sm rounded-l-[12px] shadow-lg z-50 overflow-y-auto"
+          style={{ maxHeight: 'calc(100vh - 120px)', padding: '12px' }}>
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[13px] font-bold text-[#333]">间距调节</span>
+            <button onClick={() => setShowPanel(false)} className="text-[#999] text-[12px]">收起</button>
+          </div>
+
+          <p className="text-[10px] text-[#FF2442] font-bold mt-2 mb-1">导航栏</p>
+          <Slider label="高度" k="navH" max={80} />
+          <Slider label="左右边距" k="navPx" max={30} />
+          <Slider label="间距" k="navGap" max={20} />
+          <Slider label="头像尺寸" k="avatarSize" max={50} />
+          <Slider label="关注宽" k="followW" max={80} />
+          <Slider label="关注高" k="followH" max={40} />
+
+          <p className="text-[10px] text-[#FF2442] font-bold mt-2 mb-1">图片区</p>
+          <Slider label="图片高度" k="imgH" max={600} />
+          <Slider label="计数器上" k="imgCounterTop" max={30} />
+          <Slider label="计数器右" k="imgCounterRight" max={30} />
+          <Slider label="圆点底" k="imgDotBottom" max={30} />
+          <Slider label="圆点间距" k="imgDotGap" max={15} />
+          <Slider label="圆点大小" k="imgDotSize" max={12} />
+          <Slider label="试戴底" k="tryOnBottom" max={40} />
+          <Slider label="试戴右" k="tryOnRight" max={40} />
+          <Slider label="试戴高" k="tryOnH" max={44} />
+          <Slider label="试戴左右" k="tryOnPx" max={24} />
+
+          <p className="text-[10px] text-[#FF2442] font-bold mt-2 mb-1">正文区</p>
+          <Slider label="左右边距" k="contentPx" max={30} />
+          <Slider label="上边距" k="contentPt" max={24} />
+          <Slider label="下边距" k="contentPb" max={20} />
+          <Slider label="标题字号" k="titleFs" max={24} />
+          <Slider label="标题行高" k="titleLh" max={36} />
+          <Slider label="标题下间距" k="titleMb" max={16} />
+          <Slider label="正文字号" k="textFs" max={20} />
+          <Slider label="正文行高" k="textLh" max={32} />
+          <Slider label="正文下间距" k="textMb" max={20} />
+          <Slider label="标签字号" k="tagFs" max={18} />
+          <Slider label="标签间距" k="tagGap" max={12} />
+
+          <p className="text-[10px] text-[#FF2442] font-bold mt-2 mb-1">分割线</p>
+          <Slider label="高度" k="dividerH" max={20} />
+
+          <p className="text-[10px] text-[#FF2442] font-bold mt-2 mb-1">评论区</p>
+          <Slider label="左右边距" k="commentPx" max={30} />
+          <Slider label="上下边距" k="commentPy" max={20} />
+          <Slider label="评论间距" k="commentMb" max={24} />
+          <Slider label="头像尺寸" k="commentAvatarSize" max={40} />
+          <Slider label="头像文间距" k="commentGap" max={20} />
+
+          <p className="text-[10px] text-[#FF2442] font-bold mt-2 mb-1">底部栏</p>
+          <Slider label="高度" k="bottomH" max={70} />
+          <Slider label="左右边距" k="bottomPx" max={30} />
+          <Slider label="输入框高" k="inputH" max={44} />
+          <Slider label="输入框圆角" k="inputRadius" max={22} />
+          <Slider label="图标间距" k="iconGap" max={32} />
+          <Slider label="图标大小" k="iconSize" max={36} />
+
+          <button onClick={() => setS(defaults)}
+            className="w-full mt-3 py-[6px] text-[12px] text-[#FF2442] border border-[#FF2442] rounded-[6px]">
+            重置默认值
+          </button>
+        </div>
+      )}
+      {!showPanel && (
+        <button onClick={() => setShowPanel(true)}
+          className="fixed top-[60px] right-0 bg-[#FF2442] text-white text-[11px] px-[8px] py-[6px] rounded-l-[8px] z-50 shadow-md">
+          调
+        </button>
+      )}
     </div>
   )
 }

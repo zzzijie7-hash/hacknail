@@ -125,10 +125,14 @@ export default function Shops({ onBack, onChat, nailData }) {
                 <span className="text-[#7C5CFC] text-[12px]">{formatDistance(shop.distance)}</span>
               </div>
               <p className="text-[#999] text-[12px] truncate">{shop.address}</p>
-              <div className="flex justify-end">
+              <div className="flex justify-end gap-[8px]">
                 <button onClick={() => onChat(shop)}
-                  className="px-[12px] h-[20px] rounded-[10px] bg-[#FF2442] text-white text-[12px] font-medium flex items-center">
+                  className="px-[12px] h-[28px] rounded-[8px] border border-[#FF2442] text-[#FF2442] text-[12px] font-medium flex items-center active:scale-95 transition-transform">
                   私信
+                </button>
+                <button onClick={() => onChat(shop)}
+                  className="px-[16px] h-[28px] rounded-[8px] bg-[#FF2442] text-white text-[12px] font-medium flex items-center active:scale-95 transition-transform">
+                  预约到店
                 </button>
               </div>
             </div>

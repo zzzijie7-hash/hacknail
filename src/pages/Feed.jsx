@@ -93,7 +93,7 @@ const S = {
   cardMarginBottom: 5,
 }
 
-export default function Feed({ onPost }) {
+export default function Feed({ onPost, onAIChat }) {
   const [activeTab, setActiveTab] = useState('discover')
   const [posts, setPosts] = useState(() => generatePosts(20))
   const [loading, setLoading] = useState(false)
@@ -125,8 +125,8 @@ export default function Feed({ onPost }) {
       <div className="w-full max-w-[375px] relative">
       {/* 导航栏 */}
       <div className="bg-white flex items-center h-[44px] px-[16px] sticky top-0 z-20">
-        <button className="shrink-0 mr-[12px]">
-          <img src="/更多.png" alt="menu" className="w-[18px] h-[18px]" />
+        <button onClick={onAIChat} className="shrink-0 mr-[12px]">
+          <img src="/icons/dots.svg" alt="menu" className="w-[22px] h-[22px]" />
         </button>
         <div className="flex-1 flex items-center justify-center gap-[28px]">
           {[
