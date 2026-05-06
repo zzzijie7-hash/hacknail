@@ -20,11 +20,12 @@ export default function NailLibraryPanel({ selected, onSelect, open, onClose }) 
     a[k].items.push(n)
     return a
   }, {})
-  const all = Object.values(groups).flatMap(g => g.items)
+  // 每个组作为一个款式卡片，封面用首图
+  const groupList = Object.values(groups)
 
   // 交替分配两列
   const [c0, c1] = [[], []]
-  all.forEach((n, i) => (i % 2 === 0 ? c0 : c1).push(n))
+  groupList.forEach((g, i) => (i % 2 === 0 ? c0 : c1).push(g))
 
   const add = (f) => {
     if (!f?.type.startsWith('image/')) return
@@ -81,23 +82,35 @@ export default function NailLibraryPanel({ selected, onSelect, open, onClose }) 
         <input ref={uploadRef} type="file" accept="image/*" hidden onChange={e => e.target.files[0] && add(e.target.files[0])} />
 
         {/* === 两列网格 === */}
-        {all.length > 0 ? (
+        {groupList.length > 0 ? (
           <div style={{ display:'flex', gap:G }}>
             {[c0, c1].map((col, ci) => (
               <div key={ci} style={{ width:colW, display:'flex', flexDirection:'column', gap:G }}>
-                {col.map(n => {
-                  const on = selected?.id === n.id
+                {col.map(g => {
+                  const cover = g.items[0]
+                  const isSel = selected?.groupId === g.id
                   return (
-                    <div key={n.id} onClick={() => onSelect(n)}
+                    <div key={g.id} onClick={() => { onSelect(cover); onClose() }}
                       style={{ position:'relative', cursor:'pointer' }}>
                       <div style={{
                         borderRadius:20, overflow:'hidden',
-                        border: on ? '2px solid #83F2DF' : '2px solid transparent',
-                        boxShadow: on ? '0 1px 31px rgba(131,242,223,0.3)' : 'none',
+                        border: isSel ? '2px solid #83F2DF' : '2px solid transparent',
+                        boxShadow: isSel ? '0 1px 31px rgba(131,242,223,0.3)' : 'none',
                       }}>
-                        <img src={n.src} alt="" style={{ width:'100%', display:'block', borderRadius:17 }} />
+                        <img src={cover.src} alt="" style={{ width:'100%', display:'block', borderRadius:17 }} />
                       </div>
-                      {on && <div style={{ position:'absolute', top:8, left:8, padding:'2px 8px', borderRadius:10, background:'#83F2DF', color:'rgba(0,0,0,0.7)', fontSize:10, fontWeight:500, lineHeight:'18px' }}>当前款式</div>}
+                      {/* 款式名 + 张数 */}
+                      <div style={{
+                        position:'absolute', bottom:0, left:0, right:0,
+                        padding:'6px 10px',
+                        background:'linear-gradient(transparent, rgba(0,0,0,0.45))',
+                        borderBottomLeftRadius:18, borderBottomRightRadius:18,
+                        display:'flex', justifyContent:'space-between', alignItems:'flex-end',
+                      }}>
+                        <span style={{ color:'#fff', fontSize:11, fontWeight:500, lineHeight:'16px' }}>{g.label}</span>
+                        {g.items.length > 1 && <span style={{ color:'rgba(255,255,255,0.7)', fontSize:10, whiteSpace:'nowrap' }}>{g.items.length}张</span>}
+                      </div>
+                      {isSel && <div style={{ position:'absolute', top:8, left:8, padding:'2px 8px', borderRadius:10, background:'#83F2DF', color:'rgba(0,0,0,0.7)', fontSize:10, fontWeight:500, lineHeight:'18px' }}>当前款式</div>}
                     </div>
                   )
                 })}

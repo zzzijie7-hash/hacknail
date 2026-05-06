@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
 import PageLayout from '../components/PageLayout'
 import NavBar from '../components/NavBar'
 import NailLibraryPanel from '../components/NailLibraryPanel'
@@ -21,14 +21,28 @@ export default function SmartWear({
   progress, onProgressChange,
   provider, onProviderChange,
 }) {
-  const [libraryOpen, setLibraryOpen] = useState(!!nailStyle?.id)
+  const [libraryOpen, setLibraryOpen] = useState(false)
   const [showPanel, setShowPanel] = useState(false)
   const [funnyIdx, setFunnyIdx] = useState(0)
   const [error, setError] = useState(null)
+  const [imgIdx, setImgIdx] = useState(0) // 当前款式组内图片索引
   const inputRef = useRef()
   const cameraRef = useRef()
 
   const mode = result ? 'result' : loading ? 'generating' : 'camera'
+
+  // 获取当前款式组的所有图片
+  const groupImages = useMemo(() => {
+    if (!nailStyle?.groupId) return nailStyle ? [nailStyle] : []
+    const all = loadLibrary()
+    return all.filter(n => n.groupId === nailStyle.groupId)
+  }, [nailStyle])
+
+  // 当前显示的图片
+  const currentImage = groupImages[imgIdx] || nailStyle
+
+  // 确保 imgIdx 不越界
+  useEffect(() => { setImgIdx(0) }, [nailStyle?.groupId])
 
   // 轮播趣味文案
   useEffect(() => {
@@ -48,21 +62,38 @@ export default function SmartWear({
       .map((src, i) => ({ id: Date.now() + i, src, groupId: gid, groupLabel: '帖子导入' }))
     if (newNails.length) {
       saveLibrary([...existing, ...newNails])
-      if (!nailStyle) onNailStyleChange?.(newNails[0])
+      if (!nailStyle) {
+        onNailStyleChange?.(newNails[0])
+        setImgIdx(0)
+      }
     } else if (!nailStyle) {
       const firstSrc = initialNails[0]
       const found = existing.find(n => n.src === firstSrc)
-      if (found) onNailStyleChange?.(found)
+      if (found) { onNailStyleChange?.(found); setImgIdx(0) }
     }
   }, [])
+
+  // groupImages 变化时，确保 currentImage 同步到 nailStyle
+  useEffect(() => {
+    if (currentImage && currentImage.id !== nailStyle?.id) {
+      onNailStyleChange?.(currentImage)
+    }
+  }, [currentImage?.id])
 
   const handleFile = (file) => {
     if (!file?.type.startsWith('image/')) return
     onHandFileChange?.(file)
   }
 
+  const prevImg = () => {
+    if (groupImages.length > 1) setImgIdx(i => (i - 1 + groupImages.length) % groupImages.length)
+  }
+  const nextImg = () => {
+    if (groupImages.length > 1) setImgIdx(i => (i + 1) % groupImages.length)
+  }
+
   const generate = async (forcedProvider) => {
-    if (!handFile || !nailStyle) return
+    if (!handFile || !currentImage) return
     const useProvider = forcedProvider || provider
     onLoadingChange?.(true)
     setError(null)
@@ -78,15 +109,15 @@ export default function SmartWear({
     const form = new FormData()
     form.append('hand', handFile)
     form.append('provider', useProvider)
-    if (nailStyle.src.startsWith('data:')) {
-      const arr = nailStyle.src.split(',')
+    if (currentImage.src.startsWith('data:')) {
+      const arr = currentImage.src.split(',')
       const mime = arr[0].match(/:(.*?);/)?.[1] || 'image/jpeg'
       const bstr = atob(arr[1])
       const u8 = new Uint8Array(bstr.length)
       for (let i = 0; i < bstr.length; i++) u8[i] = bstr.charCodeAt(i)
       form.append('nail', new Blob([u8], { type: mime }), 'nail.jpg')
     } else {
-      form.append('nail_url', nailStyle.src)
+      form.append('nail_url', currentImage.src)
     }
 
     try {
@@ -116,7 +147,6 @@ export default function SmartWear({
     setTimeout(() => {
       clearInterval(iv)
       onProgressChange?.(100)
-      // 把手部图和款式图叠在一起当"假结果"
       const canvas = document.createElement('canvas')
       canvas.width = 400; canvas.height = 500
       const ctx = canvas.getContext('2d')
@@ -124,10 +154,10 @@ export default function SmartWear({
       handImg.src = handPreviewRef.current
       handImg.onload = () => {
         ctx.drawImage(handImg, 0, 0, 400, 500)
-        if (nailStyle?.src) {
+        if (currentImage?.src) {
           const nailImg = new Image()
           nailImg.crossOrigin = 'anonymous'
-          nailImg.src = nailStyle.src
+          nailImg.src = currentImage.src
           nailImg.onload = () => {
             ctx.globalAlpha = 0.7
             ctx.drawImage(nailImg, 260, 30, 120, 120)
@@ -170,12 +200,34 @@ export default function SmartWear({
           )}
           {/* 当前款式 + 美甲库入口 */}
           <div className="flex items-center gap-[12px] py-[12px]">
-            {nailStyle ? (
-              <div className="flex flex-col items-center gap-[4px]">
+            {currentImage ? (
+              <div className="flex flex-col items-center gap-[4px] relative">
                 <span className="text-[#FF2442] text-[10px] font-medium">当前款式</span>
-                <div className="w-[95px] h-[95px] rounded-[15px] overflow-hidden border-[2px] border-[#FF2442]">
-                  <img src={nailStyle.src} alt="style" className="w-full h-full object-cover" />
+                <div className="relative">
+                  <div className="w-[95px] h-[95px] rounded-[15px] overflow-hidden border-[2px] border-[#FF2442]">
+                    <img src={currentImage.src} alt="style" className="w-full h-full object-cover" />
+                  </div>
+                  {/* 左右切换箭头 */}
+                  {groupImages.length > 1 && (
+                    <>
+                      <button onClick={prevImg}
+                        className="absolute left-[-10px] top-1/2 -translate-y-1/2 w-[22px] h-[22px] rounded-full bg-white shadow-md border border-[#eee] flex items-center justify-center active:scale-90 transition-transform z-10">
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="rgba(0,0,0,0.5)" strokeWidth="2.5" strokeLinecap="round">
+                          <polyline points="15 18 9 12 15 6"/>
+                        </svg>
+                      </button>
+                      <button onClick={nextImg}
+                        className="absolute right-[-10px] top-1/2 -translate-y-1/2 w-[22px] h-[22px] rounded-full bg-white shadow-md border border-[#eee] flex items-center justify-center active:scale-90 transition-transform z-10">
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="rgba(0,0,0,0.5)" strokeWidth="2.5" strokeLinecap="round">
+                          <polyline points="9 18 15 12 9 6"/>
+                        </svg>
+                      </button>
+                    </>
+                  )}
                 </div>
+                {groupImages.length > 1 && (
+                  <span className="text-[rgba(0,0,0,0.25)] text-[9px]">{imgIdx + 1}/{groupImages.length}</span>
+                )}
               </div>
             ) : (
               <div className="w-[95px] h-[95px] rounded-[15px] bg-[#f5f5f5] flex items-center justify-center">
@@ -257,9 +309,9 @@ export default function SmartWear({
 
           {/* 底部生成按钮 */}
           <div className="pt-[8px] pb-[max(16px,env(safe-area-inset-bottom))]">
-            <button onClick={generate} disabled={!handFile || !nailStyle}
+            <button onClick={generate} disabled={!handFile || !currentImage}
               className={`w-full py-[14px] rounded-[12px] font-semibold text-[15px] transition-all active:scale-[0.98]
-                ${handFile && nailStyle
+                ${handFile && currentImage
                   ? 'bg-[#FF2442] text-white'
                   : 'bg-[#f5f5f5] text-[rgba(0,0,0,0.15)] cursor-not-allowed'}`}>
               智能试戴
@@ -272,11 +324,11 @@ export default function SmartWear({
       {mode === 'generating' && (
         <div className="flex-1 flex flex-col px-[16px]">
           <div className="flex items-center gap-[12px] py-[12px]">
-            {nailStyle && (
+            {currentImage && (
               <div className="flex flex-col items-center gap-[4px]">
                 <span className="text-[rgba(0,0,0,0.4)] text-[10px]">原帖</span>
                 <div className="w-[95px] h-[95px] rounded-[15px] overflow-hidden">
-                  <img src={nailStyle.src} alt="style" className="w-full h-full object-cover" />
+                  <img src={currentImage.src} alt="style" className="w-full h-full object-cover" />
                 </div>
               </div>
             )}
@@ -290,7 +342,6 @@ export default function SmartWear({
               <img src={handPreviewUrl} alt="hand" className="absolute inset-0 w-full h-full object-cover" />
             )}
             <div className="absolute inset-0 bg-white/70 backdrop-blur-[2px] flex flex-col items-center justify-center gap-[16px]">
-              {/* 旋转渐变环 */}
               <div className="relative w-[56px] h-[56px]">
                 <svg className="animate-spin" width="56" height="56" viewBox="0 0 56 56">
                   <defs>
@@ -325,11 +376,11 @@ export default function SmartWear({
       {mode === 'result' && (
         <div className="flex-1 flex flex-col px-[16px]">
           <div className="flex items-center gap-[12px] py-[12px]">
-            {nailStyle && (
+            {currentImage && (
               <div className="flex flex-col items-center gap-[4px]">
                 <span className="text-[rgba(0,0,0,0.4)] text-[12px] font-medium">原帖</span>
                 <div className="w-[95px] h-[95px] rounded-[15px] overflow-hidden border border-[#eee]">
-                  <img src={nailStyle.src} alt="style" className="w-full h-full object-cover" />
+                  <img src={currentImage.src} alt="style" className="w-full h-full object-cover" />
                 </div>
               </div>
             )}
@@ -371,7 +422,7 @@ export default function SmartWear({
       {/* 美甲库面板 */}
       <NailLibraryPanel
         selected={nailStyle}
-        onSelect={onNailStyleChange}
+        onSelect={(nail) => { onNailStyleChange?.(nail); setImgIdx(0) }}
         open={libraryOpen}
         onClose={() => setLibraryOpen(false)}
       />
@@ -386,24 +437,24 @@ export default function SmartWear({
           </div>
           <div className="flex flex-col gap-[6px]">
             <button
-              onClick={() => { onProviderChange?.('openai'); if (handFile && nailStyle) generate('openai') }}
-              disabled={!handFile || !nailStyle}
+              onClick={() => { onProviderChange?.('openai'); if (handFile && currentImage) generate('openai') }}
+              disabled={!handFile || !currentImage}
               className={`w-full py-[8px] rounded-[8px] text-[11px] font-medium transition-all active:scale-95
                 ${provider === 'openai'
                   ? 'bg-[rgba(52,199,89,0.15)] text-[#34c759] border border-[#34c759]/30'
                   : 'bg-[#f5f5f5] text-[rgba(0,0,0,0.4)] border border-[#eee]'}
-                ${!handFile || !nailStyle ? 'opacity-40' : ''}`}
+                ${!handFile || !currentImage ? 'opacity-40' : ''}`}
             >
               GPT
             </button>
             <button
-              onClick={() => { onProviderChange?.('grok'); if (handFile && nailStyle) generate('grok') }}
-              disabled={!handFile || !nailStyle}
+              onClick={() => { onProviderChange?.('grok'); if (handFile && currentImage) generate('grok') }}
+              disabled={!handFile || !currentImage}
               className={`w-full py-[8px] rounded-[8px] text-[11px] font-medium transition-all active:scale-95
                 ${provider === 'grok'
                   ? 'bg-[rgba(255,149,0,0.15)] text-[#ff9500] border border-[#ff9500]/30'
                   : 'bg-[#f5f5f5] text-[rgba(0,0,0,0.4)] border border-[#eee]'}
-                ${!handFile || !nailStyle ? 'opacity-40' : ''}`}
+                ${!handFile || !currentImage ? 'opacity-40' : ''}`}
             >
               Grok
             </button>
