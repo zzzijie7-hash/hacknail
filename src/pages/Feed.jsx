@@ -197,12 +197,23 @@ export default function Feed({ onPost, onAIChat, onUpload }) {
         </div>
         <div className="flex justify-center pb-[8px]"><div className="w-[139px] h-[5px] rounded-[2.5px] bg-black" /></div>
       </div>
-      {/* 浮动上传入口 — 在 375px 内容区右侧外面 */}
+      {/* 浮动上传入口 — 贴在 375px 内容区右侧边缘外 */}
       <button onClick={onUpload}
-        className="absolute right-[-40px] bottom-[120px] w-[32px] h-[32px] bg-white/90 rounded-r-[8px] shadow-md z-40 flex items-center justify-center border border-[#eee] border-l-0 active:scale-95 transition-transform"
+        style={{
+          position:'fixed', top:'50%', zIndex:40,
+          width:28, height:48,
+          left:'calc(50% + 187.5px)',
+          background:'rgba(255,255,255,0.9)',
+          borderTopLeftRadius:8, borderBottomLeftRadius:8,
+          border:'1px solid #e0e0e0', borderRight:'none',
+          display:'flex', alignItems:'center', justifyContent:'center',
+          cursor:'pointer',
+          transform:'translateY(-50%)',
+          boxShadow:'0 1px 8px rgba(0,0,0,0.06)',
+        }}
         title="素材上传">
-        <span style={{ fontSize:16, color:'rgba(0,0,0,0.4)' }}>+</span>
+        <span style={{ fontSize:18, color:'rgba(0,0,0,0.4)', lineHeight:'18px' }}>+</span>
       </button>
-      </div>
+    </div>
   )
 }
