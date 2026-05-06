@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect, useLayoutEffect } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 
 // ── 动态数据（从 manifest.json 加载）─────────────────
 const TAG_MAP = { nail: '#美甲分享', pet: '#毛孩子日常', rental: '#租房日记', portrait: '#写真约拍' }
@@ -214,6 +214,7 @@ export default function Feed({ onPost, onAIChat, onUpload }) {
         title="素材上传">
         <span style={{ fontSize:18, color:'rgba(0,0,0,0.4)', lineHeight:'18px' }}>+</span>
       </button>
+      </div>
     </div>
   )
 }
