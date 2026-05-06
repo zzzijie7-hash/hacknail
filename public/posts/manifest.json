@@ -165,6 +165,25 @@
         "/posts/pet/pet6_5.jpg",
         "/posts/pet/pet6_9.jpg"
       ]
+    },
+    {
+      "title": "宠物穿搭 #pet7（4张）",
+      "author": "素材库",
+      "likes": 220,
+      "images": [
+        "/posts/pet/pet7_0.jpg",
+        "/posts/pet/pet7_2.jpg",
+        "/posts/pet/pet7_5.jpg",
+        "/posts/pet/pet7_9.jpg"
+      ]
+    },
+    {
+      "title": "宠物穿搭 #pet8（1张）",
+      "author": "素材库",
+      "likes": 130,
+      "images": [
+        "/posts/pet/pet8_0.jpg"
+      ]
     }
   ],
   "rental": [
