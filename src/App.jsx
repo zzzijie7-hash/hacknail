@@ -3,6 +3,7 @@ import './index.css'
 import Feed from './pages/Feed'
 import PostDetail from './pages/PostDetail'
 import SmartWear from './pages/SmartWear'
+import UploadPage from './pages/Upload'
 import BuySimilar from './pages/BuySimilar'
 import Mall from './pages/Mall'
 import ProductDetail from './pages/ProductDetail'
@@ -127,9 +128,15 @@ export default function App() {
     />
   }
 
+  // 素材上传页
+  if (page === 'upload') {
+    return <UploadPage onBack={() => setPage('feed')} />
+  }
+
   // 默认：小红书首页
   return <Feed
     onPost={(post) => { setPostData(post); setPage('post') }}
     onAIChat={() => setPage('aichat')}
+    onUpload={() => setPage('upload')}
   />
 }
