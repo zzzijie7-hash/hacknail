@@ -38,6 +38,8 @@ export default function App() {
     })
   }
 
+  const [feedKey, setFeedKey] = useState(0)
+
   // AI 对话页
   if (page === 'aichat') {
     return <AIChat
@@ -64,6 +66,7 @@ export default function App() {
       onBack={() => setPage('feed')}
       onBuySimilar={() => setPage('buy-similar')}
       onFindShops={() => setPage('shops')}
+      onUpload={() => setPage('upload')}
       initialNails={(postData?.images || []).map(u => u.replace('http://', 'https://'))}
       nailStyle={nailStyle}
       onNailStyleChange={setNailStyle}
@@ -130,11 +133,11 @@ export default function App() {
 
   // 素材上传页
   if (page === 'upload') {
-    return <UploadPage onBack={() => setPage('feed')} />
+    return <UploadPage onBack={() => { setPage('feed'); setFeedKey(k => k + 1) }} />
   }
 
   // 默认：小红书首页
-  return <Feed
+  return <Feed key={feedKey}
     onPost={(post) => { setPostData(post); setPage('post') }}
     onAIChat={() => setPage('aichat')}
     onUpload={() => setPage('upload')}

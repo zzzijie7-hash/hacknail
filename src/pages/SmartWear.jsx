@@ -13,7 +13,7 @@ const FUNNY_TEXTS = [
 ]
 
 export default function SmartWear({
-  onBack, onBuySimilar, onFindShops,
+  onBack, onBuySimilar, onFindShops, onUpload,
   initialNails, nailStyle, onNailStyleChange,
   handFile, onHandFileChange,
   result, onResultChange,
@@ -464,6 +464,12 @@ export default function SmartWear({
               className="w-full py-[8px] rounded-[8px] text-[11px] font-medium bg-[#f5f5f5] text-[rgba(0,0,0,0.5)] border border-[#eee] active:scale-95 transition-all disabled:opacity-40"
             >
               跳过模型
+            </button>
+            <button
+              onClick={onUpload}
+              className="w-full py-[8px] rounded-[8px] text-[11px] font-medium bg-[#f5f5f5] text-[rgba(0,0,0,0.45)] border border-[#eee] active:scale-95 transition-all"
+            >
+              + 素材上传
             </button>
           </div>
         </div>
