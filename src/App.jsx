@@ -23,7 +23,19 @@ export default function App() {
   const [progress, setProgress] = useState(0)
 
   // product data for navigation
+  const [provider, setProvider] = useState(() => localStorage.getItem('cybernail_provider') || 'openai')
   const [selectedProduct, setSelectedProduct] = useState(null)
+
+  // provider 切换时同步到后端
+  const changeProvider = (p) => {
+    setProvider(p)
+    localStorage.setItem('cybernail_provider', p)
+    fetch('/api/set-provider', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ provider: p }),
+    })
+  }
 
   // AI 对话页
   if (page === 'aichat') {
@@ -62,6 +74,8 @@ export default function App() {
       onLoadingChange={setLoading}
       progress={progress}
       onProgressChange={setProgress}
+      provider={provider}
+      onProviderChange={changeProvider}
     />
   }
 

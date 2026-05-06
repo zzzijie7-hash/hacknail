@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import PageLayout from '../components/PageLayout'
 import NavBar from '../components/NavBar'
 import NailLibraryPanel from '../components/NailLibraryPanel'
@@ -19,6 +19,7 @@ export default function SmartWear({
   result, onResultChange,
   loading, onLoadingChange,
   progress, onProgressChange,
+  provider, onProviderChange,
 }) {
   const [libraryOpen, setLibraryOpen] = useState(!!nailStyle?.id)
   const [funnyIdx, setFunnyIdx] = useState(0)
@@ -59,8 +60,9 @@ export default function SmartWear({
     onHandFileChange?.(file)
   }
 
-  const generate = async () => {
+  const generate = async (forcedProvider) => {
     if (!handFile || !nailStyle) return
+    const useProvider = forcedProvider || provider
     onLoadingChange?.(true)
     setError(null)
     onResultChange?.(null)
@@ -74,6 +76,7 @@ export default function SmartWear({
 
     const form = new FormData()
     form.append('hand', handFile)
+    form.append('provider', useProvider)
     if (nailStyle.src.startsWith('data:')) {
       const arr = nailStyle.src.split(',')
       const mime = arr[0].match(/:(.*?);/)?.[1] || 'image/jpeg'
@@ -99,7 +102,52 @@ export default function SmartWear({
     }
   }
 
+  const mockGenerate = () => {
+    if (!handFile) return
+    onLoadingChange?.(true)
+    onResultChange?.(null)
+    onProgressChange?.(0)
+    let p = 0
+    const iv = setInterval(() => {
+      p = Math.min(p + Math.random() * 25, 90)
+      onProgressChange?.(p)
+    }, 800)
+    setTimeout(() => {
+      clearInterval(iv)
+      onProgressChange?.(100)
+      // 把手部图和款式图叠在一起当"假结果"
+      const canvas = document.createElement('canvas')
+      canvas.width = 400; canvas.height = 500
+      const ctx = canvas.getContext('2d')
+      const handImg = new Image()
+      handImg.src = handPreviewRef.current
+      handImg.onload = () => {
+        ctx.drawImage(handImg, 0, 0, 400, 500)
+        if (nailStyle?.src) {
+          const nailImg = new Image()
+          nailImg.crossOrigin = 'anonymous'
+          nailImg.src = nailStyle.src
+          nailImg.onload = () => {
+            ctx.globalAlpha = 0.7
+            ctx.drawImage(nailImg, 260, 30, 120, 120)
+            onResultChange?.(canvas.toDataURL())
+            onLoadingChange?.(false)
+          }
+          nailImg.onerror = () => {
+            onResultChange?.(canvas.toDataURL())
+            onLoadingChange?.(false)
+          }
+        } else {
+          onResultChange?.(canvas.toDataURL())
+          onLoadingChange?.(false)
+        }
+      }
+    }, 2000)
+  }
+
   const handPreviewUrl = handFile ? URL.createObjectURL(handFile) : null
+  const handPreviewRef = useRef(handPreviewUrl)
+  handPreviewRef.current = handPreviewUrl
 
   return (
     <PageLayout>
@@ -194,6 +242,39 @@ export default function SmartWear({
             onChange={(e) => e.target.files[0] && handleFile(e.target.files[0])} />
           <input ref={cameraRef} type="file" accept="image/*" capture="environment" className="hidden"
             onChange={(e) => e.target.files[0] && handleFile(e.target.files[0])} />
+
+          {/* 测试按钮组 */}
+          <div className="flex items-center justify-center gap-[8px] pb-[4px]">
+            <button
+              onClick={() => { onProviderChange?.('openai'); if (handFile && nailStyle) generate('openai') }}
+              disabled={!handFile || !nailStyle}
+              className={`px-[14px] py-[6px] rounded-[8px] text-[11px] font-medium transition-all active:scale-95
+                ${provider === 'openai'
+                  ? 'bg-[rgba(52,199,89,0.15)] text-[#34c759] border border-[#34c759]/30'
+                  : 'bg-[#f5f5f5] text-[rgba(0,0,0,0.35)] border border-[#eee]'}
+                ${!handFile || !nailStyle ? 'opacity-40' : ''}`}
+            >
+              GPT
+            </button>
+            <button
+              onClick={() => { onProviderChange?.('grok'); if (handFile && nailStyle) generate('grok') }}
+              disabled={!handFile || !nailStyle}
+              className={`px-[14px] py-[6px] rounded-[8px] text-[11px] font-medium transition-all active:scale-95
+                ${provider === 'grok'
+                  ? 'bg-[rgba(255,149,0,0.15)] text-[#ff9500] border border-[#ff9500]/30'
+                  : 'bg-[#f5f5f5] text-[rgba(0,0,0,0.35)] border border-[#eee]'}
+                ${!handFile || !nailStyle ? 'opacity-40' : ''}`}
+            >
+              Grok
+            </button>
+            <button
+              onClick={mockGenerate}
+              disabled={!handFile}
+              className="px-[14px] py-[6px] rounded-[8px] text-[11px] font-medium bg-[#f5f5f5] text-[rgba(0,0,0,0.45)] border border-[#eee] active:scale-95 transition-all disabled:opacity-40"
+            >
+              跳过模型
+            </button>
+          </div>
 
           {/* 底部生成按钮 */}
           <div className="pt-[8px] pb-[max(16px,env(safe-area-inset-bottom))]">
