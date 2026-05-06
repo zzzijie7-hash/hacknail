@@ -34,7 +34,7 @@ export default function SmartWear({
   // 获取当前款式组的所有图片
   const groupImages = useMemo(() => {
     if (!nailStyle?.groupId) return nailStyle ? [nailStyle] : []
-    const all = loadLibrary()
+    const all = loadLibrary().filter(n => !n.category || n.category === 'nail')
     return all.filter(n => n.groupId === nailStyle.groupId)
   }, [nailStyle])
 
@@ -59,7 +59,7 @@ export default function SmartWear({
     const gid = 'post_' + Date.now()
     const newNails = initialNails
       .filter(src => !existingSrcs.has(src))
-      .map((src, i) => ({ id: Date.now() + i, src, groupId: gid, groupLabel: '帖子导入' }))
+      .map((src, i) => ({ id: Date.now() + i, src, groupId: gid, groupLabel: '帖子导入', category: 'nail' }))
     if (newNails.length) {
       saveLibrary([...existing, ...newNails])
       if (!nailStyle) {

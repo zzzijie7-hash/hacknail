@@ -5,14 +5,27 @@ import BottomPanel from './BottomPanel'
 const P = 16  // padding
 const G = 12  // gap everywhere
 
-export default function NailLibraryPanel({ selected, onSelect, open, onClose }) {
-  const [nails, setNails] = useState(() => loadLibrary())
+export default function NailLibraryPanel({ selected, onSelect, open, onClose, category = 'nail' }) {
+  const [nails, setNails] = useState(() => {
+    const all = loadLibrary()
+    // 旧数据迁移：无 category 默认 nail
+    let changed = false
+    const migrated = all.map(n => { if (!n.category) { changed = true; return { ...n, category: 'nail' } } return n })
+    if (changed) saveLibrary(migrated)
+    return migrated.filter(n => n.category === category)
+  })
   const [urlInput, setUrlInput] = useState('')
   const [parsing, setParsing] = useState(false)
   const [parseError, setParseError] = useState(null)
   const uploadRef = useRef()
 
-  const update = (u) => setNails(p => { const n = typeof u === 'function' ? u(p) : u; saveLibrary(n); return n })
+  const update = (u) => setNails(p => {
+    const next = typeof u === 'function' ? u(p) : u
+    const withCat = next.map(item => item.category ? item : { ...item, category })
+    const others = loadLibrary().filter(x => x.category !== category)
+    saveLibrary([...others, ...withCat])
+    return withCat
+  })
 
   const groups = nails.reduce((a, n) => {
     const k = n.groupId || 'upload'
