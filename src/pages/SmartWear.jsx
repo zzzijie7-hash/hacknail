@@ -22,6 +22,7 @@ export default function SmartWear({
   provider, onProviderChange,
 }) {
   const [libraryOpen, setLibraryOpen] = useState(!!nailStyle?.id)
+  const [showPanel, setShowPanel] = useState(false)
   const [funnyIdx, setFunnyIdx] = useState(0)
   const [error, setError] = useState(null)
   const inputRef = useRef()
@@ -156,6 +157,17 @@ export default function SmartWear({
       {/* ── 取景/拍照模式 ── */}
       {mode === 'camera' && (
         <div className="flex-1 flex flex-col px-[16px]">
+          {/* 面板开关 */}
+          {!showPanel && (
+            <button
+              onClick={() => setShowPanel(true)}
+              className="fixed right-0 top-[120px] w-[28px] h-[48px] bg-white/90 rounded-l-[8px] shadow-md z-40 flex items-center justify-center active:scale-95 transition-transform border border-[#eee] border-r-0"
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="rgba(0,0,0,0.4)" strokeWidth="2.5" strokeLinecap="round">
+                <polyline points="9 18 15 12 9 6"/>
+              </svg>
+            </button>
+          )}
           {/* 当前款式 + 美甲库入口 */}
           <div className="flex items-center gap-[12px] py-[12px]">
             {nailStyle ? (
@@ -242,39 +254,6 @@ export default function SmartWear({
             onChange={(e) => e.target.files[0] && handleFile(e.target.files[0])} />
           <input ref={cameraRef} type="file" accept="image/*" capture="environment" className="hidden"
             onChange={(e) => e.target.files[0] && handleFile(e.target.files[0])} />
-
-          {/* 测试按钮组 */}
-          <div className="flex items-center justify-center gap-[8px] pb-[4px]">
-            <button
-              onClick={() => { onProviderChange?.('openai'); if (handFile && nailStyle) generate('openai') }}
-              disabled={!handFile || !nailStyle}
-              className={`px-[14px] py-[6px] rounded-[8px] text-[11px] font-medium transition-all active:scale-95
-                ${provider === 'openai'
-                  ? 'bg-[rgba(52,199,89,0.15)] text-[#34c759] border border-[#34c759]/30'
-                  : 'bg-[#f5f5f5] text-[rgba(0,0,0,0.35)] border border-[#eee]'}
-                ${!handFile || !nailStyle ? 'opacity-40' : ''}`}
-            >
-              GPT
-            </button>
-            <button
-              onClick={() => { onProviderChange?.('grok'); if (handFile && nailStyle) generate('grok') }}
-              disabled={!handFile || !nailStyle}
-              className={`px-[14px] py-[6px] rounded-[8px] text-[11px] font-medium transition-all active:scale-95
-                ${provider === 'grok'
-                  ? 'bg-[rgba(255,149,0,0.15)] text-[#ff9500] border border-[#ff9500]/30'
-                  : 'bg-[#f5f5f5] text-[rgba(0,0,0,0.35)] border border-[#eee]'}
-                ${!handFile || !nailStyle ? 'opacity-40' : ''}`}
-            >
-              Grok
-            </button>
-            <button
-              onClick={mockGenerate}
-              disabled={!handFile}
-              className="px-[14px] py-[6px] rounded-[8px] text-[11px] font-medium bg-[#f5f5f5] text-[rgba(0,0,0,0.45)] border border-[#eee] active:scale-95 transition-all disabled:opacity-40"
-            >
-              跳过模型
-            </button>
-          </div>
 
           {/* 底部生成按钮 */}
           <div className="pt-[8px] pb-[max(16px,env(safe-area-inset-bottom))]">
@@ -396,6 +375,48 @@ export default function SmartWear({
         open={libraryOpen}
         onClose={() => setLibraryOpen(false)}
       />
+
+      {/* 测试面板 */}
+      {showPanel && (
+        <div className="fixed top-[80px] right-0 w-[180px] bg-white/95 backdrop-blur-sm rounded-l-[12px] shadow-lg z-50"
+          style={{ padding: '12px' }}>
+          <div className="flex items-center justify-between mb-[10px]">
+            <span className="text-[12px] font-bold text-[#333]">模型测试</span>
+            <button onClick={() => setShowPanel(false)} className="text-[#999] text-[11px] active:scale-90">收起</button>
+          </div>
+          <div className="flex flex-col gap-[6px]">
+            <button
+              onClick={() => { onProviderChange?.('openai'); if (handFile && nailStyle) generate('openai') }}
+              disabled={!handFile || !nailStyle}
+              className={`w-full py-[8px] rounded-[8px] text-[11px] font-medium transition-all active:scale-95
+                ${provider === 'openai'
+                  ? 'bg-[rgba(52,199,89,0.15)] text-[#34c759] border border-[#34c759]/30'
+                  : 'bg-[#f5f5f5] text-[rgba(0,0,0,0.4)] border border-[#eee]'}
+                ${!handFile || !nailStyle ? 'opacity-40' : ''}`}
+            >
+              GPT
+            </button>
+            <button
+              onClick={() => { onProviderChange?.('grok'); if (handFile && nailStyle) generate('grok') }}
+              disabled={!handFile || !nailStyle}
+              className={`w-full py-[8px] rounded-[8px] text-[11px] font-medium transition-all active:scale-95
+                ${provider === 'grok'
+                  ? 'bg-[rgba(255,149,0,0.15)] text-[#ff9500] border border-[#ff9500]/30'
+                  : 'bg-[#f5f5f5] text-[rgba(0,0,0,0.4)] border border-[#eee]'}
+                ${!handFile || !nailStyle ? 'opacity-40' : ''}`}
+            >
+              Grok
+            </button>
+            <button
+              onClick={mockGenerate}
+              disabled={!handFile}
+              className="w-full py-[8px] rounded-[8px] text-[11px] font-medium bg-[#f5f5f5] text-[rgba(0,0,0,0.5)] border border-[#eee] active:scale-95 transition-all disabled:opacity-40"
+            >
+              跳过模型
+            </button>
+          </div>
+        </div>
+      )}
     </PageLayout>
   )
 }
