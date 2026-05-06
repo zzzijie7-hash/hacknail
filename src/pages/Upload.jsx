@@ -49,7 +49,7 @@ export default function UploadPage({ onBack }) {
     <div style={{ minHeight:'100vh', background:'#FAFAFA', fontFamily:'PingFang SC, sans-serif', display:'flex', flexDirection:'column', alignItems:'center' }}>
       <div style={{ width:'100%', maxWidth:600, padding:24 }}>
         <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:24 }}>
-          <button onClick={onBack} style={{ border:'none', background:'none', cursor:'pointer', fontSize:16 }}>← 返回</button>
+          <button onClick={() => { window.dispatchEvent(new Event('feed:refresh')); onBack() }} style={{ border:'none', background:'none', cursor:'pointer', fontSize:16 }}>← 返回</button>
           <span style={{ fontSize:18, fontWeight:600 }}>素材上传</span>
         </div>
 

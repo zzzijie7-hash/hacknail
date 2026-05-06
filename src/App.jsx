@@ -38,8 +38,6 @@ export default function App() {
     })
   }
 
-  const [feedKey, setFeedKey] = useState(0)
-
   // AI 对话页
   if (page === 'aichat') {
     return <AIChat
@@ -133,11 +131,11 @@ export default function App() {
 
   // 素材上传页
   if (page === 'upload') {
-    return <UploadPage onBack={() => { setPage('feed'); setFeedKey(k => k + 1) }} />
+    return <UploadPage onBack={() => setPage('feed')} />
   }
 
   // 默认：小红书首页
-  return <Feed key={feedKey}
+  return <Feed
     onPost={(post) => { setPostData(post); setPage('post') }}
     onAIChat={() => setPage('aichat')}
     onUpload={() => setPage('upload')}
