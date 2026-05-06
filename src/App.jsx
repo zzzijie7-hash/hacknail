@@ -23,7 +23,7 @@ export default function App() {
   const [loading, setLoading] = useState(false)
   const [progress, setProgress] = useState(0)
 
-  // product data for navigation
+  const [feedKey, setFeedKey] = useState(0)
   const [provider, setProvider] = useState(() => localStorage.getItem('cybernail_provider') || 'openai')
   const [selectedProduct, setSelectedProduct] = useState(null)
 
@@ -131,11 +131,11 @@ export default function App() {
 
   // 素材上传页
   if (page === 'upload') {
-    return <UploadPage onBack={() => setPage('feed')} />
+    return <UploadPage onBack={() => { setPage('feed'); setFeedKey(k => k + 1) }} />
   }
 
   // 默认：小红书首页
-  return <Feed
+  return <Feed key={feedKey}
     onPost={(post) => { setPostData(post); setPage('post') }}
     onAIChat={() => setPage('aichat')}
     onUpload={() => setPage('upload')}

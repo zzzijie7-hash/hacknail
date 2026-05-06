@@ -70,7 +70,8 @@ export default function Feed({ onPost, onAIChat, onUpload }) {
   const [loading, setLoading] = useState(false)
   const sentinelRef = useRef(null)
 
-  const loadData = useCallback(() => {
+  // 启动时从 manifest 加载数据
+  useEffect(() => {
     loadPostPools().then(pm => {
       if (pm) {
         setPoolMap(pm)
@@ -78,14 +79,6 @@ export default function Feed({ onPost, onAIChat, onUpload }) {
       }
     })
   }, [])
-
-  // 启动时加载，并监听 refresh 事件（上传完成后触发）
-  useEffect(() => {
-    loadData()
-    const handler = () => loadData()
-    window.addEventListener('feed:refresh', handler)
-    return () => window.removeEventListener('feed:refresh', handler)
-  }, [loadData])
 
   const loadMore = useCallback(() => {
     if (loading || !poolMap) return
