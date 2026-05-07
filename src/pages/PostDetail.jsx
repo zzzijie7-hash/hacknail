@@ -169,32 +169,42 @@ export default function PostDetail({ post, onBack, onTryOn }) {
         </p>
       </div>
 
-      {/* ── 底部固定栏 ── */}
-      <div className="flex items-center shrink-0 border-t border-[rgba(0,0,0,0.08)]"
-        style={{ height: 53, padding: '0 14px', paddingBottom: 'max(8px, env(safe-area-inset-bottom))' }}>
-        {/* 输入框 */}
-        <div className="flex-1 flex items-center px-[14px]"
-          style={{ height: 34, borderRadius: 17, background: 'rgba(48,48,52,0.05)' }}>
-          <img src="/icons/edit.svg" width={16} height={16} alt="edit" />
-          <span style={{ fontSize: 13.4, color: 'rgba(0,0,0,0.45)', marginLeft: 6 }}>说点什么...</span>
+      {/* ── 底部固定栏 (Figma: engage bar 375x53, pad 14.3/9.5, gap 11.5) ── */}
+      <div className="flex items-center shrink-0"
+        style={{
+          height: 53, padding: '9.5px 14.3px',
+          paddingBottom: 'max(9.5px, env(safe-area-inset-bottom))',
+          borderTop: '1px solid rgba(0,0,0,0.05)',
+          gap: 11.5,
+        }}>
+        {/* 输入框 (156x34, bg rgba(48,48,52,0.05), pad 7.6, gap 3.8) */}
+        <div className="flex items-center" style={{
+          width: 156, height: 34, gap: 3.8, padding: '7.6px 11.5px',
+          background: 'rgba(48,48,52,0.05)', borderRadius: 6,
+        }}>
+          <img src="/icons/edit.svg" width={20} height={20} alt="edit" />
+          <span style={{ fontSize: 13.4, color: 'rgba(0,0,0,0.45)', lineHeight: '17px' }}>说点什么...</span>
         </div>
 
-        {/* 互动图标 */}
-        <div className="flex items-center" style={{ gap: 20, marginLeft: 16 }}>
-          <button onClick={() => setLiked(!liked)} className="flex flex-col items-center gap-[2px]">
+        {/* 互动图标 (HORIZONTAL 左右排列, gap 9.5, 内 gap 3.8) */}
+        <div className="flex items-center" style={{ gap: 9.5 }}>
+          <button onClick={() => setLiked(!liked)} className="flex items-center" style={{ gap: 3.8 }}>
             <img src="/icons/like.svg" width={28} height={28} alt="like"
               style={{ filter: liked ? 'invert(25%) sepia(96%) saturate(7468%) hue-rotate(341deg) brightness(97%) contrast(110%)' : 'none' }} />
-            <span style={{ fontSize: 13.4, color: 'rgba(0,0,0,0.8)' }}>{post.likes + (liked ? 1 : 0)}</span>
+            <span style={{ fontSize: 13.4, fontWeight: 500, color: 'rgba(0,0,0,0.8)', lineHeight: '18px' }}>
+              {post.likes + (liked ? 1 : 0)}
+            </span>
           </button>
-          <div className="flex flex-col items-center gap-[2px]">
-            <img src="/icons/chat.svg" width={28} height={28} alt="chat" />
-            <span style={{ fontSize: 13.4, color: 'rgba(0,0,0,0.45)' }}>46</span>
+
+          <div className="flex items-center" style={{ gap: 3.8 }}>
+            <img src="/icons/collect.svg" width={28} height={28} alt="collect" />
+            <span style={{ fontSize: 13.4, fontWeight: 500, color: 'rgba(0,0,0,0.8)', lineHeight: '18px' }}>46</span>
           </div>
-          <button onClick={() => setCollected(!collected)} className="flex flex-col items-center gap-[2px]">
-            <img src="/icons/collect.svg" width={28} height={28} alt="collect"
-              style={{ filter: collected ? 'invert(70%) sepia(89%) saturate(456%) hue-rotate(358deg) brightness(103%) contrast(103%)' : 'none' }} />
-            <span style={{ fontSize: 13.4, color: 'rgba(0,0,0,0.45)' }}>128</span>
-          </button>
+
+          <div className="flex items-center" style={{ gap: 3.8 }}>
+            <img src="/icons/chat.svg" width={28} height={28} alt="chat" />
+            <span style={{ fontSize: 13.4, fontWeight: 500, color: 'rgba(0,0,0,0.8)', lineHeight: '18px' }}>19</span>
+          </div>
         </div>
       </div>
     </div>
