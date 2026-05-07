@@ -84,9 +84,9 @@ export default function PostDetail({ post, onBack, onTryOn }) {
         )}
       </div>
 
-      {/* 圆点指示器 — 在图片下方 */}
+      {/* 圆点指示器 (height=24, padding=10) */}
       {images.length > 1 && (
-        <div className="flex justify-center py-[6px] gap-[5px] shrink-0">
+        <div className="flex justify-center items-center shrink-0" style={{ height: 24, padding: 10, gap: 5 }}>
           {images.map((_, i) => (
             <div key={i} className="rounded-full"
               style={{
