@@ -3,6 +3,105 @@ import { Colors, Type } from '../config/design'
 
 const TAG_MAP = { nail: '#美甲分享', pet: '#毛孩子日常', rental: '#租房日记', portrait: '#写真约拍' }
 
+// 美甲标题池
+const NAIL_TITLES = [
+  '🐾 | Mark 一组好看的淡人清透感美甲！！🤍',
+  '💅🏻 分享一组醋酸美甲+白月光美甲～',
+  '✨ | 氛围感拉满！春日猫眼美甲合集 🌸',
+  '🫧 极简温柔ins风美甲，日常百搭不挑皮',
+  '💫 | 黄皮亲妈！显白到尖叫的冰透美甲',
+  '🎀 法式少女心美甲分享，约会必备款 💗',
+  '🌿 | 适合上班族的低调优雅裸色美甲',
+  '🦋 蝴蝶结+珍珠！甜到冒泡的日系美甲',
+  '🍊 | 夏天的第一副荧光色系美甲，活力满格',
+  '❄️ 高级感拉满的镜面银美甲，酷女孩必备',
+]
+
+// 美甲正文池
+const NAIL_CONTENTS = [
+  `💅🏻分享一组醋酸美甲+白月光美甲～
+🫧适合淡人的清透感美甲，日常百搭。
+
+-原博主已经图片上标注（注明），文案自己原创。
+-审核请勿误判[抱拳R]
+
+🌟创作说明：
+本帖为二次创作整合。
+素材源于小红书博主，版权归原作者
+图片文案为原创，只单纯分享，无广！！
+
+#浪漫生活的记录者 #美甲 #美甲推荐 #氛围感美甲 #ins美甲 #温柔美甲 #白月光美甲 #猫眼美甲 #百搭美甲 #简约美甲`,
+  `✨挖到宝了！这款冰透猫眼美甲也太仙了吧～
+
+🫧清透感满分，光线下一闪一闪的超级好看。
+黄皮上手完全不显黑，反而衬得很干净。
+
+-图源小红书博主，已标注出处。
+-文案原创，纯分享无广[飞吻R]
+
+🌸适合：日常通勤/约会/拍照
+💅🏻甲型：方圆甲/梯形甲都好看
+
+#美甲分享 #冰透美甲 #猫眼美甲 #显白美甲 #温柔美甲`,
+  `🌸春日限定！粉嫩桃花美甲分享～
+
+粉透底+金箔+小珍珠点缀
+温柔又有灵气，上手超级少女心💗
+
+特别适合春天出门踏青拍照
+搭配浅色裙子绝美！！
+
+-素材源自小红书博主分享
+-文案原创整理，无广纯分享✨
+
+#氛围感美甲 #春日美甲 #少女心美甲 #桃花美甲`,
+  `🍃极简风美甲合集｜上班族必备低调款
+
+裸色打底+极细银边
+简约不简单，越看越高级的那种！
+
+甲面干净利落，开会见客户完全得体
+长度适中，打字也不会不方便～
+
+✨原创文案整理，图片版权归原作者
+🤍理性种草，按需参考～
+
+#极简美甲 #上班族美甲 #裸色美甲 #高级感美甲`,
+  `💫黄皮进来抄作业！这组显白美甲绝了
+
+酒红渐变+碎金箔点缀
+上手的一瞬间白了一个度！！！
+室内低调室外惊艳，越看越爱🌹
+
+适合秋冬和正式场合
+搭配西装或者小黑裙都绝了
+
+-素材源自小红书，版权归原作者
+-文案原创整理，纯分享无广～
+
+#显白美甲 #酒红美甲 #秋冬美甲 #气质美甲`,
+]
+
+// 宠物/租房/写真标题池
+const PET_TITLES = [
+  '🐱 | 给毛孩子换了新装扮，也太可爱了吧！',
+  '🐶 周末带狗子去宠物友好咖啡店探店 ☕',
+  '🐾 | 猫主子的新衣服，穿上就不肯脱了',
+  '🦴 小型犬穿搭指南！可爱又实用～',
+]
+const RENTAL_TITLES = [
+  '🏠 | 这间一室户的户型也太方正了吧',
+  '🔑 实地看了这套房，户型比预期好太多',
+  '🏡 | 帮大家还原了这套房子的户型结构',
+  '📐 从照片分析户型布局，果然南北通透',
+]
+const PORTRAIT_TITLES = [
+  '📷 | 这组写真风格太适合春天拍了',
+  '✨ 发现一个超会拍的写真工作室',
+  '🎞️ | 胶片写真真的是永远的神',
+  '📸 韩式清新vs日系胶片，你pick哪个',
+]
+
 async function loadPostPools() {
   try {
     const r = await fetch('/api/manifest?t=' + Date.now())
@@ -25,13 +124,24 @@ function generatePosts(count, poolMap) {
     const idx = counters[type] % pool.length
     counters[type]++
     const p = pool[idx]
+    let title = p.title, content = p.title
+    if (type === 'nail') {
+      title = NAIL_TITLES[i % NAIL_TITLES.length]
+      content = NAIL_CONTENTS[i % NAIL_CONTENTS.length]
+    } else if (type === 'pet') {
+      title = PET_TITLES[i % PET_TITLES.length]
+    } else if (type === 'rental') {
+      title = RENTAL_TITLES[i % RENTAL_TITLES.length]
+    } else if (type === 'portrait') {
+      title = PORTRAIT_TITLES[i % PORTRAIT_TITLES.length]
+    }
     result.push({
       id: Date.now() + i,
-      title: p.title,
+      title,
       author: p.author,
       likes: p.likes + Math.floor(Math.random() * 20),
       images: p.images || [],
-      content: p.title,
+      content,
       tags: [TAG_MAP[type] || `#${type}`],
       type,
     })
