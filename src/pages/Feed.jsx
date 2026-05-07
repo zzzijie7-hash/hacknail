@@ -47,7 +47,7 @@ function fmt(n) {
 
 // Tab 配置
 const TABS = [
-  { key: 'follow', label: '关注', hasExpand: true },
+  { key: 'follow', label: '关注' },
   { key: 'discover', label: '发现' },
   { key: 'nearby', label: '附近' },
 ]
@@ -55,11 +55,12 @@ const TABS = [
 // 次级导航标签
 const SUB_TABS = [
   { key: 'recommend', label: '推荐' },
-  { key: 'nail', label: '美甲' },
-  { key: 'pet', label: '宠物' },
-  { key: 'rental', label: '租房' },
-  { key: 'portrait', label: '写真' },
   { key: 'live', label: '直播' },
+  { key: 'drama', label: '短剧' },
+  { key: 'wear', label: '穿搭' },
+  { key: 'travel', label: '旅行' },
+  { key: 'anime', label: '动漫' },
+  { key: 'anime2', label: '动漫' },
 ]
 
 export default function Feed({ onPost, onAIChat, onUpload }) {
@@ -125,19 +126,14 @@ export default function Feed({ onPost, onAIChat, onUpload }) {
                 <button key={tab.key} onClick={() => setActiveTab(tab.key)}
                   className="relative flex items-center"
                   style={{ height: 44, padding: '8px 12px' }}>
-                  <div className="flex items-center">
-                    <span style={{
-                      fontSize: Type.tab.size,
-                      fontWeight: isActive ? Type.tab.weight : Type.tabInactive.weight,
-                      color: isActive ? '#222' : Colors.textHint,
-                      lineHeight: `${Type.tab.lh}px`,
-                    }}>
-                      {tab.label}
-                    </span>
-                    {tab.hasExpand && (
-                      <img src="/icons/expand-tab.svg" alt="" style={{ width: 16, height: 16, marginLeft: 2 }} />
-                    )}
-                  </div>
+                  <span style={{
+                    fontSize: Type.tab.size,
+                    fontWeight: isActive ? Type.tab.weight : Type.tabInactive.weight,
+                    color: isActive ? '#222' : Colors.textHint,
+                    lineHeight: `${Type.tab.lh}px`,
+                  }}>
+                    {tab.label}
+                  </span>
                   {isActive && (
                     <div className="absolute rounded-full bg-[#FF2442]"
                       style={{ width: 28, height: 2, bottom: -2, left: '50%', transform: 'translateX(-50%)' }} />
@@ -154,25 +150,49 @@ export default function Feed({ onPost, onAIChat, onUpload }) {
         </div>
       </div>
 
-      {/* ── 次级导航栏 (52x40 each, padding 12/8/12/8, gap 12) ── */}
-      <div className="w-full bg-white flex items-center py-[8px] overflow-x-auto"
-        style={{ maxWidth: 375, scrollbarWidth: 'none', height: 40, gap: 12 }}>
-        {SUB_TABS.map(st => {
-          const isActive = activeSubTab === st.key
-          return (
-            <button key={st.key} onClick={() => setActiveSubTab(st.key)}
-              className="shrink-0 relative flex items-center justify-center"
-              style={{ height: 40, padding: '8px 12px', minWidth: 52 }}>
-              <span style={{
-                fontSize: 14, fontWeight: isActive ? 500 : 400,
-                color: isActive ? '#222' : Colors.textHint,
-                lineHeight: '20px',
-              }}>
-                {st.label}
-              </span>
-            </button>
-          )
-        })}
+      {/* ── 次级导航栏 (Figma: 375x40, tabs 52x40, padding 12/8) ── */}
+      <div className="w-full bg-white relative overflow-hidden" style={{ maxWidth: 375, height: 40 }}>
+        {/* 可滚动 tab 列表 */}
+        <div className="flex items-center h-full overflow-x-auto" style={{ scrollbarWidth: 'none', paddingRight: 60 }}>
+          {SUB_TABS.map(st => {
+            const isActive = activeSubTab === st.key
+            return (
+              <button key={st.key} onClick={() => setActiveSubTab(st.key)}
+                className="shrink-0 flex items-center justify-center"
+                style={{ height: 40, padding: '8px 12px', minWidth: 52 }}>
+                <span style={{
+                  fontSize: 14, fontWeight: isActive ? 500 : 400,
+                  color: isActive ? 'rgba(0,0,0,0.8)' : 'rgba(0,0,0,0.45)',
+                  lineHeight: '20px',
+                }}>
+                  {st.label}
+                </span>
+              </button>
+            )
+          })}
+        </div>
+
+        {/* 左边渐变遮罩 */}
+        <div className="absolute left-0 top-0 pointer-events-none" style={{
+          width: 34, height: 34,
+          background: 'linear-gradient(to right, rgba(255,255,255,1), rgba(255,255,255,0))',
+        }} />
+
+        {/* 右边：实心白底 + 渐变遮罩 + 展开箭头 */}
+        <div className="absolute right-0 top-0 flex items-center pointer-events-none" style={{ height: 40 }}>
+          {/* 渐变遮罩 34x40 */}
+          <div style={{
+            width: 34, height: 40,
+            background: 'linear-gradient(to right, rgba(255,255,255,0), rgba(255,255,255,1))',
+          }} />
+          {/* 白色实心区域 */}
+          <div style={{ width: 22, height: 40, background: '#fff' }} />
+        </div>
+        {/* 展开箭头 - 在遮罩上方，可点击 */}
+        <button className="absolute right-0 top-0 flex items-center justify-center"
+          style={{ width: 22, height: 40, paddingRight: 6 }}>
+          <img src="/icons/expand-tab.svg" alt="展开" style={{ width: 16, height: 16 }} />
+        </button>
       </div>
 
       {/* ── 瀑布流内容区 ── */}
