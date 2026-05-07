@@ -136,7 +136,7 @@ export default function Feed({ onPost, onAIChat, onUpload }) {
                   </span>
                   {isActive && (
                     <div className="absolute rounded-full bg-[#FF2442]"
-                      style={{ width: 28, height: 2, bottom: -2, left: '50%', transform: 'translateX(-50%)' }} />
+                      style={{ width: 28, height: 2, bottom: 6, left: '50%', transform: 'translateX(-50%)' }} />
                   )}
                 </button>
               )
@@ -172,25 +172,16 @@ export default function Feed({ onPost, onAIChat, onUpload }) {
           })}
         </div>
 
-        {/* 左边渐变遮罩 */}
-        <div className="absolute left-0 top-0 pointer-events-none" style={{
-          width: 34, height: 34,
-          background: 'linear-gradient(to right, rgba(255,255,255,1), rgba(255,255,255,0))',
-        }} />
-
-        {/* 右边：实心白底 + 渐变遮罩 + 展开箭头 */}
+        {/* 右边：渐变遮罩 + 白色实心 + 展开箭头 */}
         <div className="absolute right-0 top-0 flex items-center pointer-events-none" style={{ height: 40 }}>
-          {/* 渐变遮罩 34x40 */}
           <div style={{
             width: 34, height: 40,
             background: 'linear-gradient(to right, rgba(255,255,255,0), rgba(255,255,255,1))',
           }} />
-          {/* 白色实心区域 */}
-          <div style={{ width: 22, height: 40, background: '#fff' }} />
+          <div style={{ width: 28, height: 40, background: '#fff' }} />
         </div>
-        {/* 展开箭头 - 在遮罩上方，可点击 */}
         <button className="absolute right-0 top-0 flex items-center justify-center"
-          style={{ width: 22, height: 40, paddingRight: 6 }}>
+          style={{ width: 28, height: 40 }}>
           <img src="/icons/expand-tab.svg" alt="展开" style={{ width: 16, height: 16 }} />
         </button>
       </div>
