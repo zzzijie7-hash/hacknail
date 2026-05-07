@@ -117,13 +117,14 @@ export default function Feed({ onPost, onAIChat, onUpload }) {
             <img src="/icons/dots.svg" alt="dots" style={{ width: 48, height: 44, marginLeft: -8 }} />
           </button>
 
-          {/* 中间: Tab */}
-          <div className="flex-1 flex items-center justify-center gap-[28px]">
+          {/* 中间: Tab (52x44, padding 12/8) */}
+          <div className="flex-1 flex items-center justify-center" style={{ gap: 0 }}>
             {TABS.map(tab => {
               const isActive = activeTab === tab.key
               return (
                 <button key={tab.key} onClick={() => setActiveTab(tab.key)}
-                  className="relative pb-[2px] flex flex-col items-center">
+                  className="relative flex items-center"
+                  style={{ height: 44, padding: '8px 12px' }}>
                   <div className="flex items-center">
                     <span style={{
                       fontSize: Type.tab.size,
@@ -153,14 +154,15 @@ export default function Feed({ onPost, onAIChat, onUpload }) {
         </div>
       </div>
 
-      {/* ── 次级导航栏 ── */}
-      <div className="w-full bg-white flex items-center px-[16px] h-[36px] gap-[20px] overflow-x-auto"
-        style={{ maxWidth: 375, scrollbarWidth: 'none' }}>
+      {/* ── 次级导航栏 (52x40 each, padding 12/8/12/8, gap 12) ── */}
+      <div className="w-full bg-white flex items-center py-[8px] overflow-x-auto"
+        style={{ maxWidth: 375, scrollbarWidth: 'none', height: 40, gap: 12 }}>
         {SUB_TABS.map(st => {
           const isActive = activeSubTab === st.key
           return (
             <button key={st.key} onClick={() => setActiveSubTab(st.key)}
-              className="shrink-0 relative h-full flex items-center">
+              className="shrink-0 relative flex items-center justify-center"
+              style={{ height: 40, padding: '8px 12px', minWidth: 52 }}>
               <span style={{
                 fontSize: 14, fontWeight: isActive ? 500 : 400,
                 color: isActive ? '#222' : Colors.textHint,
