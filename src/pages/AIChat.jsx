@@ -92,9 +92,7 @@ export default function AIChat({ onBack, onTryOn }) {
         <div className="w-full flex items-center px-[15px] h-[53px] shrink-0" style={{ gap: 15 }}>
           <button onClick={onBack} className="shrink-0 active:scale-90 transition-transform"
             style={{ width: 23, height: 23, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <svg width="9" height="17" viewBox="0 0 9 17" fill="none">
-              <path d="M8 1L1 8.5L8 16" stroke="#000" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
+            <img src="/icons/back.svg" width={23} height={23} alt="back" />
           </button>
           <div className="flex items-center" style={{ gap: 6 }}>
             <div className="rounded-full overflow-hidden shrink-0" style={{ width: 24, height: 24, background: '#FF2442' }}>

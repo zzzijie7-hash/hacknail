@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { getAgent } from '../config/agents'
-import { Colors, Type, Spacing, Radius } from '../config/design'
+import { Colors, Type, Radius } from '../config/design'
 
 export default function PostDetail({ post, onBack, onTryOn }) {
   const [liked, setLiked] = useState(false)
@@ -22,9 +22,7 @@ export default function PostDetail({ post, onBack, onTryOn }) {
         {/* ── 顶部导航栏 ── */}
         <div className="flex items-center px-[14px] h-[61px] gap-[10px] sticky top-0 bg-white z-20">
           <button onClick={onBack} className="shrink-0 w-[32px] h-[32px] flex items-center justify-center">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#333" strokeWidth="2.5" strokeLinecap="round">
-              <polyline points="15 18 9 12 15 6"/>
-            </svg>
+            <img src="/icons/back.svg" width={22} height={22} alt="back" />
           </button>
 
           <div className="rounded-full bg-[#f5f5f5] flex items-center justify-center shrink-0 overflow-hidden"
@@ -45,11 +43,7 @@ export default function PostDetail({ post, onBack, onTryOn }) {
           </button>
 
           <button className="shrink-0 w-[32px] h-[32px] flex items-center justify-center">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#333" strokeWidth="2" strokeLinecap="round">
-              <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/>
-              <polyline points="16 6 12 2 8 6"/>
-              <line x1="12" y1="2" x2="12" y2="15"/>
-            </svg>
+            <img src="/icons/share.svg" width={22} height={22} alt="share" />
           </button>
         </div>
 
@@ -198,11 +192,7 @@ export default function PostDetail({ post, onBack, onTryOn }) {
           {/* 输入框 */}
           <div className="flex-1 bg-[rgba(48,48,52,0.05)] flex items-center px-[14px]"
             style={{ height: 34, borderRadius: Radius.pill }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(0,0,0,0.4)" strokeWidth="2">
-              <path d="M11 3a1 1 0 011-1h1a1 1 0 011 1v2h3.5A2.5 2.5 0 0119 7.5V20a1 1 0 01-1 1H6a1 1 0 01-1-1V7.5A2.5 2.5 0 017.5 5H11V3z"/>
-              <rect x="8" y="10" width="8" height="1" rx="0.5"/>
-              <rect x="8" y="13" width="6" height="1" rx="0.5"/>
-            </svg>
+            <img src="/icons/edit.svg" width={16} height={16} alt="edit" />
             <span className="text-[rgba(0,0,0,0.45)] text-[14px] ml-[6px]">说点什么…</span>
           </div>
 
@@ -210,10 +200,8 @@ export default function PostDetail({ post, onBack, onTryOn }) {
           <div className="flex items-center ml-[16px]" style={{ gap: 20 }}>
             {/* 点赞 */}
             <button onClick={() => setLiked(!liked)} className="flex flex-col items-center gap-[2px]">
-              <svg width="28" height="28" viewBox="0 0 24 24" fill={liked ? '#FF2442' : 'none'}
-                stroke={liked ? '#FF2442' : 'rgba(0,0,0,0.8)'} strokeWidth="2">
-                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-              </svg>
+              <img src="/icons/like.svg" width={28} height={28} alt="like"
+                style={{ filter: liked ? 'invert(25%) sepia(96%) saturate(7468%) hue-rotate(341deg) brightness(97%) contrast(110%)' : 'none' }} />
               <span className="text-[rgba(0,0,0,0.8)] text-[13px]" style={{ minWidth: 20, textAlign: 'center' }}>
                 {post.likes + (liked ? 1 : 0)}
               </span>
@@ -221,19 +209,14 @@ export default function PostDetail({ post, onBack, onTryOn }) {
 
             {/* 评论 */}
             <div className="flex flex-col items-center gap-[2px]">
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="rgba(0,0,0,0.8)" strokeWidth="2">
-                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-              </svg>
+              <img src="/icons/chat.svg" width={28} height={28} alt="chat" />
               <span className="text-[rgba(0,0,0,0.45)] text-[13px]">{commentCount}</span>
             </div>
 
             {/* 收藏 */}
             <button onClick={() => setCollected(!collected)} className="flex flex-col items-center gap-[2px]">
-              <svg width="28" height="28" viewBox="0 0 24 24" fill={collected ? '#FFC107' : 'none'}
-                stroke={collected ? '#FFC107' : 'rgba(0,0,0,0.8)'} strokeWidth="2">
-                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-              </svg>
-              <span className="text-[rgba(0,0,0,0.45)] text-[13px]">128</span>
+              <img src="/icons/collect.svg" width={28} height={28} alt="collect"
+                style={{ filter: collected ? 'invert(70%) sepia(89%) saturate(456%) hue-rotate(358deg) brightness(103%) contrast(103%)' : 'none' }} />              <span className="text-[rgba(0,0,0,0.45)] text-[13px]">128</span>
             </button>
           </div>
         </div>

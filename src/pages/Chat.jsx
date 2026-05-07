@@ -74,9 +74,7 @@ export default function Chat({ onBack, shop, nailData, onSmartWear }) {
         {/* ── 顶栏 ── */}
         <div className="flex items-center h-[44px] px-[12px] gap-[10px] border-b border-[#F5F5F5] shrink-0">
           <button onClick={onBack} className="shrink-0 flex items-center justify-center w-[22px] h-[22px]">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#222" strokeWidth="2.5" strokeLinecap="round">
-              <polyline points="15 18 9 12 15 6"/>
-            </svg>
+            <img src="/icons/back.svg" width={22} height={22} alt="back" />
           </button>
 
           <div className="w-[34px] h-[34px] rounded-full bg-[#f5f5f5] flex items-center justify-center text-[14px] shrink-0">

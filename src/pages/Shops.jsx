@@ -96,9 +96,7 @@ export default function Shops({ onBack, onChat, nailData }) {
         {/* ── 顶栏: back + 搜索框 ── */}
         <div className="flex items-center h-[44px] px-[16px] gap-[10px] sticky top-0 bg-white z-20">
           <button onClick={onBack} className="shrink-0 flex items-center justify-center w-[22px] h-[22px]">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#222" strokeWidth="2.5" strokeLinecap="round">
-              <polyline points="15 18 9 12 15 6"/>
-            </svg>
+            <img src="/icons/back.svg" width={22} height={22} alt="back" />
           </button>
           <div className="flex-1 bg-[rgba(48,48,52,0.05)] rounded-[16px] h-[32px] flex items-center px-[12px]" style={{ gap: 6 }}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2.5" strokeLinecap="round">
