@@ -74,12 +74,19 @@ export default function PostDetail({ post, onBack, onTryOn }) {
           </div>
         )}
 
-        {/* Agent 按钮 */}
+        {/* Agent 按钮 (Figma: 87x36, cornerRadius=30, pad 14/8, bottom/right=10) */}
         {agent.label && (
           <button onClick={() => onTryOn(post)}
-            className="absolute text-white text-[13px] font-medium rounded-[15px] bg-[#FF2442] flex items-center justify-center active:scale-95 transition-transform"
-            style={{ bottom: 12, right: 12, height: 30, padding: '0 14px' }}>
-            {agent.icon} <span className="ml-[4px]">{agent.label}</span>
+            className="absolute text-white flex items-center justify-center active:scale-95 transition-transform"
+            style={{
+              bottom: 10, right: 10, height: 36, padding: '8px 14px',
+              background: 'rgba(48,48,52,0.85)', borderRadius: 30, gap: 6,
+              fontSize: 13, fontWeight: 500, lineHeight: '20px',
+            }}>
+            试同款
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <path d="M1 7H13M13 7L7 1M13 7L7 13" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
           </button>
         )}
       </div>
