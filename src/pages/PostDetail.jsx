@@ -74,19 +74,6 @@ export default function PostDetail({ post, onBack, onTryOn }) {
           </div>
         )}
 
-        {/* 圆点 */}
-        {images.length > 1 && (
-          <div className="absolute bottom-[12px] left-1/2 -translate-x-1/2 flex gap-[5px]">
-            {images.map((_, i) => (
-              <div key={i} className="rounded-full"
-                style={{
-                  width: i === currentImg ? 6 : 5, height: i === currentImg ? 6 : 5,
-                  background: i === currentImg ? '#FF2442' : 'rgba(48,48,52,0.2)',
-                }} />
-            ))}
-          </div>
-        )}
-
         {/* Agent 按钮 */}
         {agent.label && (
           <button onClick={() => onTryOn(post)}
@@ -96,6 +83,19 @@ export default function PostDetail({ post, onBack, onTryOn }) {
           </button>
         )}
       </div>
+
+      {/* 圆点指示器 — 在图片下方 */}
+      {images.length > 1 && (
+        <div className="flex justify-center py-[6px] gap-[5px] shrink-0">
+          {images.map((_, i) => (
+            <div key={i} className="rounded-full"
+              style={{
+                width: i === currentImg ? 6 : 5, height: i === currentImg ? 6 : 5,
+                background: i === currentImg ? '#FF2442' : 'rgba(48,48,52,0.2)',
+              }} />
+          ))}
+        </div>
+      )}
 
       {/* ── 正文区 ── */}
       <div className="flex-1 overflow-y-auto" style={{ padding: '14px 14px 0' }}>
@@ -140,27 +140,7 @@ export default function PostDetail({ post, onBack, onTryOn }) {
           </p>
         </div>
 
-        {/* 相关入口卡片 */}
-        <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
-          {[
-            { icon: '💬', label: '咨询', sub: '和@Purple聊聊' },
-            { icon: '👥', label: '群聊', sub: '上海微醺搭子' },
-            { icon: '📺', label: '直播', sub: '明天21:30开播' },
-          ].map(c => (
-            <div key={c.label} style={{
-              flex: '1 1 calc(33% - 6px)', minWidth: 100,
-              background: 'rgba(48,48,52,0.05)', borderRadius: 8,
-              padding: '8px 10px',
-            }}>
-              <p style={{ fontSize: 13.4, fontWeight: 500, color: 'rgba(0,0,0,0.8)', lineHeight: '19px' }}>
-                {c.icon} {c.label}
-              </p>
-              <p style={{ fontSize: 13.4, color: 'rgba(0,0,0,0.45)', lineHeight: '19px' }}>{c.sub}</p>
-            </div>
-          ))}
-        </div>
-
-        {/* 评论概览 — 简化为仅显示数量 */}
+        {/* 评论概览 */}
         <p style={{
           fontSize: 13.4, fontWeight: 500, color: 'rgba(0,0,0,0.8)', lineHeight: '19px',
           paddingTop: 10, borderTop: '1px solid #F5F5F5',
@@ -180,7 +160,7 @@ export default function PostDetail({ post, onBack, onTryOn }) {
         {/* 输入框 (156x34, bg rgba(48,48,52,0.05), pad 7.6, gap 3.8) */}
         <div className="flex items-center" style={{
           width: 156, height: 34, gap: 3.8, padding: '7.6px 11.5px',
-          background: 'rgba(48,48,52,0.05)', borderRadius: 6,
+          background: 'rgba(48,48,52,0.05)', borderRadius: 17,
         }}>
           <img src="/icons/edit.svg" width={20} height={20} alt="edit" />
           <span style={{ fontSize: 13.4, color: 'rgba(0,0,0,0.45)', lineHeight: '17px' }}>说点什么...</span>
