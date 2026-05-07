@@ -170,9 +170,6 @@ export default function Feed({ onPost, onAIChat, onUpload }) {
               }}>
                 {st.label}
               </span>
-              {isActive && (
-                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[20px] h-[2px] rounded-full bg-[#FF2442]" />
-              )}
             </button>
           )
         })}
