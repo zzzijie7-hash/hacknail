@@ -327,8 +327,8 @@ export default function Feed({ onPost, onAIChat, onUpload }) {
       </div>
 
       {/* ── 底部导航栏 ── */}
-      <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full bg-white border-t border-[#eee] z-10 flex flex-col items-center"
-        style={{ maxWidth: 375 }}>
+      <div className="fixed left-1/2 -translate-x-1/2 w-full bg-white border-t border-[#eee] z-10 flex flex-col items-center"
+        style={{ maxWidth: 375, bottom: 32 }}>
         <div className="flex items-center justify-around w-full h-[50px] px-[10px]">
           <span style={{ fontSize: Type.tab.size, fontWeight: Type.tab.weight, color: '#222' }}>首页</span>
           <span style={{ fontSize: Type.tab.size, fontWeight: 400, color: Colors.textHint }}>购物</span>
@@ -338,10 +338,10 @@ export default function Feed({ onPost, onAIChat, onUpload }) {
           <span style={{ fontSize: Type.tab.size, fontWeight: 400, color: Colors.textHint }}>消息</span>
           <span style={{ fontSize: Type.tab.size, fontWeight: 400, color: Colors.textHint }}>我</span>
         </div>
-        <div className="pb-[8px] flex justify-center">
-          <div className="w-[139px] h-[5px] rounded-[2.5px] bg-black" />
-        </div>
       </div>
+
+      {/* 底部白条 32px */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white z-10" style={{ height: 32 }} />
 
       {/* ── 浮动上传入口 ── */}
       <button onClick={onUpload}

@@ -232,7 +232,6 @@ export default function PostDetail({ post, onBack, onTryOn }) {
       <div className="flex items-center shrink-0"
         style={{
           height: 53, padding: '9.5px 14.3px',
-          paddingBottom: 'max(9.5px, env(safe-area-inset-bottom))',
           borderTop: '1px solid rgba(0,0,0,0.05)',
           gap: 11.5,
         }}>
