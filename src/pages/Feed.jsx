@@ -103,7 +103,7 @@ export default function Feed({ onPost, onAIChat, onUpload }) {
         <div className="w-full flex items-center px-[16px] h-[44px]" style={{ maxWidth: 375 }}>
           {/* 左侧: 点点入口 */}
           <button onClick={onAIChat} className="shrink-0 mr-[12px] flex items-center justify-center">
-            <img src="/icons/dots.svg" alt="dots" className="w-[22px] h-[22px]" />
+            <img src="/icons/dots.svg" alt="dots" className="w-[22px] h-auto" />
           </button>
 
           {/* 中间: Tab */}
@@ -132,7 +132,7 @@ export default function Feed({ onPost, onAIChat, onUpload }) {
 
           {/* 右侧: 搜索 */}
           <button className="shrink-0 ml-[12px] flex items-center justify-center">
-            <img src="/icons/search.svg" alt="search" className="w-[22px] h-[22px]" />
+            <img src="/icons/search.svg" alt="search" className="w-[22px] h-auto" />
           </button>
         </div>
       </div>
