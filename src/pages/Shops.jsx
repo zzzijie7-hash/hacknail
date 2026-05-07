@@ -1,26 +1,38 @@
 import { useState, useEffect } from 'react'
+import { Colors, Type, Spacing, Radius } from '../config/design'
 
 const AMAP_KEY = '32c8cd01f088610e8ab03274c0678c56'
 
 const MOCK_SHOPS = [
-  { id: 1, name: '樱花美甲工作室', address: '朝阳区建国路88号SOHO现代城B1', distance: 350, rating: 4.8, avatar: '🌸', tag: '日系美甲' },
-  { id: 2, name: 'Nail Art Studio', address: '朝阳区三里屯太古里南区3层', distance: 580, rating: 4.9, avatar: '✨', tag: '韩式美甲' },
-  { id: 3, name: '指尖艺术美甲', address: '朝阳区望京SOHO T1 1层', distance: 1200, rating: 4.7, avatar: '💎', tag: '法式美甲' },
-  { id: 4, name: '小鹿美甲', address: '朝阳区大悦城5层', distance: 2100, rating: 4.6, avatar: '🦌', tag: '手绘美甲' },
-  { id: 5, name: 'Miss Nail 美甲沙龙', address: '海淀区中关村创业大厦2层', distance: 3500, rating: 4.5, avatar: '💅', tag: '极简风' },
-  { id: 6, name: '蜜糖美甲', address: '西城区西单大悦城3层', distance: 4200, rating: 4.8, avatar: '🍬', tag: '甜美风' },
+  { id: 1, name: '梅匠美甲小店(SOHO复兴广场D座)', district: '黄浦区', category: '日式美甲', avgPrice: '¥132/人', notesCount: '1465篇笔记', distance: 350, rating: 9.2, avatar: '💅', features: ['免费停车', '宠物友好'], review: '今天去这里过生日，居然有蛋糕寿司' },
+  { id: 2, name: 'Meraki198麻吉', district: '徐汇区', category: '创意菜', avgPrice: '¥196/人', notesCount: '2212篇笔记', distance: 580, rating: 9.1, avatar: '🍽️', features: ['免费停车', '年轻人爱去'], review: '这家店过生日或者朋友小聚下非常适合' },
+  { id: 3, name: '一尺花园(安和花园店)', district: '长宁区', category: '咖啡店', avgPrice: '¥272/人', notesCount: '1135篇笔记', distance: 1200, rating: 9.0, avatar: '☕', features: [], review: '每家都是不同主题的花园，氛围感绝佳' },
+  { id: 4, name: 'ME&JOE(鲁班店)', district: '黄浦区', category: '小吃快餐', avgPrice: '¥80/人', notesCount: '135篇笔记', distance: 2100, rating: 8.8, avatar: '🍔', features: [], review: '地方很大干净，宠物友好' },
+  { id: 5, name: 'Nail Art Studio 韩式美甲', district: '静安区', category: '韩式美甲', avgPrice: '¥168/人', notesCount: '890篇笔记', distance: 3500, rating: 9.3, avatar: '✨', features: ['ins风', '可约拍'], review: '小姐姐很温柔，做的超细致' },
+  { id: 6, name: '蜜糖美甲·Sugar Nail', district: '浦东新区', category: '甜美风', avgPrice: '¥108/人', notesCount: '672篇笔记', distance: 4200, rating: 9.0, avatar: '🍬', features: ['学生折扣'], review: '超可爱！下次还来' },
 ]
 
-const TAG_FILTERS = [
-  { label: '全部', x: 16, w: 58 },
-  { label: '日系', x: 82, w: 58 },
-  { label: '韩式', x: 148, w: 58 },
-  { label: '法式', x: 214, w: 44 },
-  { label: '手绘', x: 266, w: 44 },
-  { label: '极简', x: 318, w: 44 },
+const FILTER_TAGS = [
+  { label: '全城', hasArrow: true },
+  { label: '分类', hasArrow: true },
+  { label: '生日餐' },
+  { label: '烛光' },
+  { label: '菜单' },
+  { label: '约会' },
+  { label: '氛围感' },
+  { label: '性价比' },
 ]
 
-function formatDistance(m) {
+const LOCATION_TAGS = [
+  { label: '全部', x: 16 },
+  { label: '日系', x: 82 },
+  { label: '韩式', x: 148 },
+  { label: '法式', x: 214 },
+  { label: '手绘', x: 266 },
+  { label: '极简', x: 318 },
+]
+
+function fmtDistance(m) {
   if (m < 1000) return `${m}m`
   return `${(m / 1000).toFixed(1)}km`
 }
@@ -46,9 +58,16 @@ export default function Shops({ onBack, onChat, nailData }) {
           const data = await res.json()
           if (data.pois?.length) {
             const mapped = data.pois.map((poi, i) => ({
-              id: i, name: poi.name, address: poi.address || poi.pname + poi.cityname,
-              distance: parseInt(poi.distance) || 999, rating: parseFloat(poi.biz_ext?.rating) || 4.5,
-              avatar: '💅', tag: '美甲店', tel: poi.tel,
+              id: i, name: poi.name,
+              district: poi.adname || '',
+              category: poi.type?.split(';').pop() || '美甲店',
+              distance: parseInt(poi.distance) || 999,
+              rating: parseFloat(poi.biz_ext?.rating) || 4.5,
+              avatar: '💅',
+              notesCount: '',
+              avgPrice: '',
+              features: [],
+              review: poi.address || '',
             })).sort((a, b) => a.distance - b.distance)
             setShops(mapped)
           } else {
@@ -64,82 +83,173 @@ export default function Shops({ onBack, onChat, nailData }) {
     )
   }, [])
 
-  const filteredShops = activeFilter === '全部' ? shops : shops.filter(s => s.tag.includes(activeFilter))
+  const filteredShops = activeFilter === '全部'
+    ? shops
+    : shops.filter(s => s.category?.includes(activeFilter))
 
   return (
-    <div className="min-h-screen bg-[#FAFAFA] relative overflow-x-hidden flex flex-col items-center" style={{ fontFamily: "-apple-system, 'PingFang SC', sans-serif" }}>
-      <div className="w-full max-w-[375px] min-h-screen bg-white relative">
+    <div className="min-h-screen flex flex-col items-center"
+      style={{ fontFamily: "'PingFang SC', -apple-system, 'SF Pro', sans-serif", background: '#fff' }}>
 
-      {/* 顶栏 */}
-      <div className="px-[16px] flex items-center h-[44px] gap-[10px] sticky top-0 bg-white z-20">
-        <button onClick={onBack}>
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#222" strokeWidth="2.5" strokeLinecap="round">
-            <polyline points="15 18 9 12 15 6"/>
-          </svg>
-        </button>
-        <div className="flex-1 bg-[#303034]/[0.05] rounded-[16px] px-[12px] h-[32px] flex items-center gap-[6px]">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2.5" strokeLinecap="round">
-            <circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>
-          </svg>
-          <span className="text-[#999] text-[13px]">附近美甲店</span>
-        </div>
-      </div>
+      <div className="w-full bg-white" style={{ maxWidth: 375 }}>
 
-      {/* 筛选标签 */}
-      <div className="px-[16px] py-[8px] flex gap-[8px] overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
-        {TAG_FILTERS.map((tag) => (
-          <button key={tag.label} onClick={() => setActiveFilter(tag.label)}
-            className={`h-[28px] rounded-[6px] text-[13px] whitespace-nowrap flex items-center justify-center
-              ${activeFilter === tag.label
-                ? 'bg-[#FF2442] text-white'
-                : 'bg-[#303034]/[0.05] text-[#666]'}`}
-            style={{ width: `${tag.w}px`, minWidth: `${tag.w}px` }}>
-            {tag.label}
-          </button>
-        ))}
-      </div>
-
-      {/* 商户列表 */}
-      <div className="flex flex-col">
-        {loading ? (
-          <div className="flex justify-center py-20">
-            <svg className="animate-spin h-6 w-6 text-[#FF2442]" viewBox="0 0 24 24" fill="none">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+        {/* ── 顶栏: back + 搜索框 ── */}
+        <div className="flex items-center h-[44px] px-[16px] gap-[10px] sticky top-0 bg-white z-20">
+          <button onClick={onBack} className="shrink-0 flex items-center justify-center w-[22px] h-[22px]">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#222" strokeWidth="2.5" strokeLinecap="round">
+              <polyline points="15 18 9 12 15 6"/>
             </svg>
+          </button>
+          <div className="flex-1 bg-[rgba(48,48,52,0.05)] rounded-[16px] h-[32px] flex items-center px-[12px]" style={{ gap: 6 }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2.5" strokeLinecap="round">
+              <circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>
+            </svg>
+            <span className="text-[#999] text-[13px]">上海美甲</span>
           </div>
-        ) : filteredShops.map((shop) => (
-          <div key={shop.id} className="px-[16px] py-[16px] flex gap-[12px] border-b border-[#f5f5f5]">
-            <div className="w-[88px] h-[88px] rounded-[4px] bg-[#f5f5f5] flex items-center justify-center text-[36px] shrink-0">
-              {shop.avatar}
-            </div>
-            <div className="flex-1 min-w-0 flex flex-col justify-between py-[2px]">
-              <div className="flex items-center gap-[6px]">
-                <span className="text-[#222] text-[16px] font-medium truncate">{shop.name}</span>
-                <span className="px-[4px] py-[1px] rounded-[2px] bg-[#FFF0F0] text-[#FF2442] text-[11px] shrink-0">{shop.tag}</span>
-              </div>
-              <div className="flex items-center gap-[6px]">
-                <span className="text-[#FFC107] text-[12px]">★</span>
-                <span className="text-[#999] text-[12px]">{shop.rating}</span>
-                <span className="text-[#ddd] text-[12px]">·</span>
-                <span className="text-[#7C5CFC] text-[12px]">{formatDistance(shop.distance)}</span>
-              </div>
-              <p className="text-[#999] text-[12px] truncate">{shop.address}</p>
-              <div className="flex justify-end gap-[8px]">
-                <button onClick={() => onChat(shop)}
-                  className="px-[12px] h-[28px] rounded-[8px] border border-[#FF2442] text-[#FF2442] text-[12px] font-medium flex items-center active:scale-95 transition-transform">
-                  私信
-                </button>
-                <button onClick={() => onChat(shop)}
-                  className="px-[16px] h-[28px] rounded-[8px] bg-[#FF2442] text-white text-[12px] font-medium flex items-center active:scale-95 transition-transform">
-                  预约到店
-                </button>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
+        </div>
 
+        {/* ── 筛选 Tab: 全城/分类 + 标签 ── */}
+        <div className="flex items-center h-[44px] px-[16px] bg-white border-b border-[#F5F5F5]" style={{ gap: 8 }}>
+          <div className="flex gap-[8px] overflow-x-auto flex-1" style={{ scrollbarWidth: 'none' }}>
+            {FILTER_TAGS.map((tag) => {
+              const isDropdown = tag.hasArrow
+              const isActiveDropdown = isDropdown
+              return (
+                <button key={tag.label}
+                  className={`h-[28px] rounded-[6px] text-[12px] flex items-center justify-center shrink-0
+                    ${isActiveDropdown
+                      ? 'bg-[rgba(48,48,52,0.07)] text-[#333] font-medium'
+                      : 'bg-[rgba(48,48,52,0.05)] text-[#666]'}`}
+                  style={{
+                    padding: isDropdown ? '0 8px 0 10px' : '0 10px',
+                    gap: isDropdown ? 2 : 0,
+                  }}>
+                  <span>{tag.label}</span>
+                  {isDropdown && (
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#666" strokeWidth="2.5" strokeLinecap="round">
+                      <polyline points="6 9 12 15 18 9"/>
+                    </svg>
+                  )}
+                </button>
+              )
+            })}
+          </div>
+          {/* 地图入口 */}
+          <button className="shrink-0 flex items-center text-[#666] text-[12px] gap-[2px] ml-[8px]">
+            <span>地图</span>
+          </button>
+        </div>
+
+        {/* ── 二级分类标签 ── */}
+        <div className="flex gap-[8px] px-[16px] py-[8px] overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
+          {LOCATION_TAGS.map((tag) => (
+            <button key={tag.label} onClick={() => setActiveFilter(tag.label)}
+              className="h-[28px] rounded-[6px] text-[13px] flex items-center justify-center shrink-0"
+              style={{
+                width: tag.w || 58,
+                background: activeFilter === tag.label ? '#FF2442' : 'rgba(48,48,52,0.05)',
+                color: activeFilter === tag.label ? '#fff' : '#666',
+              }}>
+              {tag.label}
+            </button>
+          ))}
+        </div>
+
+        {/* ── 商户列表 ── */}
+        <div className="flex flex-col" style={{ paddingBottom: 40 }}>
+          {loading ? (
+            <div className="flex justify-center py-20">
+              <svg className="animate-spin h-6 w-6 text-[#FF2442]" viewBox="0 0 24 24" fill="none">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+              </svg>
+            </div>
+          ) : filteredShops.map((shop) => (
+            <div key={shop.id} className="flex px-[16px] py-[16px] gap-[10px] border-b border-[#F5F5F5] active:bg-[#FAFAFA]">
+              {/* 缩略图 */}
+              <div className="rounded-[4px] bg-[#f5f5f5] flex items-center justify-center text-[36px] shrink-0"
+                style={{ width: 88, height: 88 }}>
+                {shop.avatar}
+              </div>
+
+              {/* 信息区 */}
+              <div className="flex-1 min-w-0 flex flex-col justify-between">
+                {/* 店名 */}
+                <p className="text-[#222] text-[14px] font-medium truncate leading-[14px]"
+                  style={{ fontSize: Type.cardTitle.size, fontWeight: Type.cardTitle.weight, lineHeight: `${Type.cardTitle.lh}px` }}>
+                  {shop.name}
+                </p>
+
+                {/* 评分 + 区 + 品类 + 人均 */}
+                <div className="flex items-center gap-[4px] flex-wrap">
+                  {shop.rating && (
+                    <>
+                      <span className="flex items-center gap-[1px]">
+                        <svg width="14" height="14" viewBox="0 0 14 14" fill="#FF2442">
+                          <path d="M7 0l1.6 4.9h5.1l-4.1 3 1.6 4.9L7 9.8l-4.1 3 1.6-4.9-4.1-3h5.1z"/>
+                        </svg>
+                        <span className="text-[#FF2442] font-medium" style={{ fontSize: Type.small.size, fontWeight: Type.small.weight, fontFamily: "'RED Number', 'PingFang SC', sans-serif" }}>
+                          {shop.rating}
+                        </span>
+                      </span>
+                      <span className="text-[#ccc]">|</span>
+                    </>
+                  )}
+                  <span className="text-[#999]" style={{ fontSize: Type.small.size, lineHeight: '18px' }}>{shop.district}</span>
+                  {shop.category && (
+                    <>
+                      <span className="text-[#ccc]">|</span>
+                      <span className="text-[#999]" style={{ fontSize: Type.small.size, lineHeight: '18px' }}>{shop.category}</span>
+                    </>
+                  )}
+                  {shop.avgPrice && (
+                    <>
+                      <span className="text-[#ccc]">|</span>
+                      <span className="text-[#999]" style={{ fontSize: Type.small.size, lineHeight: '18px' }}>{shop.avgPrice}</span>
+                    </>
+                  )}
+                </div>
+
+                {/* 笔记数 + 特色 + 距离 */}
+                <div className="flex items-center gap-[4px] text-[#999]" style={{ fontSize: Type.small.size, lineHeight: '18px' }}>
+                  {shop.notesCount && <span>{shop.notesCount}</span>}
+                  {shop.features?.map(f => (
+                    <span key={f} className="text-[#999]">| {f}</span>
+                  ))}
+                  {shop.distance && (
+                    <>
+                      <span className="text-[#ccc]">|</span>
+                      <span>{fmtDistance(shop.distance)}</span>
+                    </>
+                  )}
+                </div>
+
+                {/* 用户评价条 */}
+                {shop.review && (
+                  <div className="flex items-center gap-[4px] rounded-[4px]"
+                    style={{
+                      background: 'rgba(48,48,52,0.05)',
+                      height: 20, padding: '1px 6px',
+                    }}>
+                    <div className="w-[16px] h-[16px] rounded-full bg-[#ccc] shrink-0" />
+                    <span className="text-[#666] truncate" style={{ fontSize: Type.small.size, lineHeight: '18px' }}>
+                      "{shop.review}"
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {/* 消息图标 */}
+              <button onClick={() => onChat(shop)}
+                className="shrink-0 self-center active:scale-90 transition-transform"
+                style={{ width: 20, height: 20 }}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2">
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                </svg>
+              </button>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   )

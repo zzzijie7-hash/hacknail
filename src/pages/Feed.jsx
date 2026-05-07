@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
+import { Colors, Type } from '../config/design'
 
-// ── 动态数据（从 manifest.json 加载）─────────────────
 const TAG_MAP = { nail: '#美甲分享', pet: '#毛孩子日常', rental: '#租房日记', portrait: '#写真约拍' }
 
 async function loadPostPools() {
@@ -39,29 +39,18 @@ function generatePosts(count, poolMap) {
   return result
 }
 
-function formatLikes(n) {
+function fmt(n) {
   if (n >= 10000) return (n / 10000).toFixed(1) + 'w'
   if (n >= 1000) return (n / 1000).toFixed(1) + 'k'
   return n
 }
 
-// 固化间距参数
-const S = {
-  cardPaddingX: 8,
-  imgToTitle: 8,
-  titleFontSize: 14,
-  titleLineHeight: 20,
-  titleToAuthor: 6,
-  cardPaddingBottom: 8,
-  authorAvatarSize: 18,
-  authorGap: 4,
-  authorToLike: 10,
-  likeIconToCount: 2,
-  likeIconSize: 16,
-  columnGap: 5,
-  columnPaddingX: 5,
-  cardMarginBottom: 5,
-}
+// Tab 配置
+const TABS = [
+  { key: 'follow', label: '关注' },
+  { key: 'discover', label: '发现' },
+  { key: 'nearby', label: '附近' },
+]
 
 export default function Feed({ onPost, onAIChat, onUpload }) {
   const [activeTab, setActiveTab] = useState('discover')
@@ -70,7 +59,6 @@ export default function Feed({ onPost, onAIChat, onUpload }) {
   const [loading, setLoading] = useState(false)
   const sentinelRef = useRef(null)
 
-  // 启动时从 manifest 加载数据
   useEffect(() => {
     loadPostPools().then(pm => {
       if (pm) {
@@ -101,119 +89,203 @@ export default function Feed({ onPost, onAIChat, onUpload }) {
   }, [loadMore])
 
   return (
-    <div className="min-h-screen bg-[#FAFAFA] flex flex-col items-center" style={{ fontFamily: "-apple-system, 'PingFang SC', sans-serif", position:'relative' }}>
-      <div className="w-full max-w-[375px] relative">
-      {/* 导航栏 */}
-      <div className="bg-white flex items-center h-[44px] px-[16px] sticky top-0 z-20">
-        <button onClick={onAIChat} className="shrink-0 mr-[12px]">
-          <img src="/icons/dots.svg" alt="menu" className="w-[22px] h-[22px]" />
-        </button>
-        <div className="flex-1 flex items-center justify-center gap-[28px]">
-          {[
-            { key: 'follow', label: '关注' },
-            { key: 'discover', label: '发现' },
-            { key: 'nearby', label: '附近' },
-          ].map(tab => (
-            <button key={tab.key} onClick={() => setActiveTab(tab.key)} className="relative pb-[2px]">
-              <span style={{ fontSize: 16, fontWeight: activeTab === tab.key ? 600 : 400 }}
-                className={activeTab === tab.key ? 'text-[#222]' : 'text-[#999]'}>
-                {tab.label}
-              </span>
-              {activeTab === tab.key && (
-                <div className="absolute left-1/2 -translate-x-1/2 w-[28px] h-[2px] rounded-full bg-[#FF2442]" style={{ top: 'calc(100% + 2px)' }} />
-              )}
-            </button>
-          ))}
-        </div>
-      </div>
+    <div className="min-h-screen flex flex-col items-center"
+      style={{ fontFamily: "'PingFang SC', -apple-system, 'SF Pro', sans-serif", background: Colors.pageBg }}>
 
-      {/* 瀑布流 */}
-      <div style={{ padding: `${S.columnPaddingX}px ${S.columnPaddingX}px 90px` }}>
-        <div className="columns-2" style={{ gap: `${S.columnGap}px` }}>
-          {posts.map((post) => (
-            <div key={post.id} onClick={() => onPost(post)}
-              className="bg-white rounded-[4px] overflow-hidden cursor-pointer active:opacity-90 break-inside-avoid"
-              style={{ marginBottom: `${S.cardMarginBottom}px` }}>
-              {/* 封面图 */}
-              <div className="w-full aspect-square bg-[#f0f0f0] relative overflow-hidden">
-                <img src={post.images[0]} alt="" className="w-full h-full object-cover" loading="lazy" />
-              </div>
-              {/* 标题 + 作者 */}
-              <div style={{ padding: `${S.imgToTitle}px ${S.cardPaddingX}px ${S.cardPaddingBottom}px` }}>
-                <p className="font-medium"
-                  style={{
-                    fontSize: `${S.titleFontSize}px`,
-                    lineHeight: `${S.titleLineHeight}px`,
-                    marginBottom: `${S.titleToAuthor}px`,
-                    color: 'rgba(0,0,0,0.8)',
-                    display: '-webkit-box',
-                    WebkitLineClamp: 2,
-                    WebkitBoxOrient: 'vertical',
-                    overflow: 'hidden',
-                  }}>
-                  {post.title}
-                </p>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center min-w-0 flex-1" style={{ gap: `${S.authorGap}px` }}>
-                    <div className="rounded-full bg-[#f5f5f5] flex items-center justify-center shrink-0 overflow-hidden"
-                      style={{ width: `${S.authorAvatarSize}px`, height: `${S.authorAvatarSize}px` }}>
-                      <span style={{ fontSize: Math.max(8, S.authorAvatarSize * 0.5) }}>
-                        {post.type === 'nail' ? '💅' : post.type === 'pet' ? '🐱' : post.type === 'rental' ? '🏠' : post.type === 'portrait' ? '📷' : '✨'}
-                      </span>
-                    </div>
-                    <span className="text-[#999] text-[11px] truncate">{post.author}</span>
-                  </div>
-                  <div className="flex items-center shrink-0" style={{ marginLeft: `${S.authorToLike}px`, gap: `${S.likeIconToCount}px` }}>
-                    <svg style={{ width: `${S.likeIconSize}px`, height: `${S.likeIconSize}px` }} viewBox="0 0 24 24" fill="none" stroke="#ccc" strokeWidth="2">
-                      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-                    </svg>
-                    <span className="text-[#999] text-[13px]">{formatLikes(post.likes)}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
+      <div className="w-full bg-white flex flex-col items-center" style={{ maxWidth: 375 }}>
 
-        {/* 加载更多哨兵 */}
-        <div ref={sentinelRef} className="py-4 flex justify-center">
-          {loading && (
-            <svg className="animate-spin h-5 w-5 text-[#FF2442]" viewBox="0 0 24 24" fill="none">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+        {/* ── SystemBar 系统状态栏 ── */}
+        <div className="w-full flex items-center justify-between px-[24px] h-[44px]" style={{ maxWidth: 375 }}>
+          <span style={{ fontSize: 16.2, fontWeight: 590, color: '#000', fontFamily: "'SF Pro', -apple-system, sans-serif", lineHeight: '21px' }}>
+            9:41
+          </span>
+          <div className="flex items-center gap-[6px]">
+            <svg width="17" height="11" viewBox="0 0 17 11" fill="none">
+              <rect x="0" y="7" width="2" height="4" rx="0.5" fill="#000"/>
+              <rect x="3" y="5" width="2" height="6" rx="0.5" fill="#000"/>
+              <rect x="6" y="3" width="2" height="8" rx="0.5" fill="#000"/>
+              <rect x="9" y="0" width="2" height="11" rx="0.5" fill="#000"/>
             </svg>
-          )}
+            <svg width="17" height="11" viewBox="0 0 17 11" fill="none">
+              <path d="M0 5.5 Q4 2 8.5 5.5 T17 2" stroke="#000" strokeWidth="1.2" fill="none"/>
+            </svg>
+            <svg width="27" height="13" viewBox="0 0 27 13">
+              <rect x="0" y="3" width="22" height="7" rx="1.5" stroke="#000" strokeWidth="1" fill="none"/>
+              <rect x="2" y="5" width="18" height="3" rx="0.5" fill="#000"/>
+              <rect x="23" y="1" width="3" height="11" rx="1" fill="#000"/>
+            </svg>
+          </div>
+        </div>
+
+        {/* ── 导航栏: menu + Tab + search ── */}
+        <div className="w-full flex items-center px-[16px] h-[44px]" style={{ maxWidth: 375 }}>
+          {/* 左侧: 点点入口 */}
+          <button onClick={onAIChat} className="shrink-0 mr-[12px] flex items-center justify-center w-[22px] h-[22px]">
+            <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+              <circle cx="6" cy="11" r="2" fill="#333"/>
+              <circle cx="11" cy="11" r="2" fill="#333"/>
+              <circle cx="16" cy="11" r="2" fill="#333"/>
+            </svg>
+          </button>
+
+          {/* 中间: Tab */}
+          <div className="flex-1 flex items-center justify-center gap-[28px]">
+            {TABS.map(tab => {
+              const isActive = activeTab === tab.key
+              return (
+                <button key={tab.key} onClick={() => setActiveTab(tab.key)}
+                  className="relative pb-[2px] flex flex-col items-center">
+                  <span style={{
+                    fontSize: Type.tab.size,
+                    fontWeight: isActive ? Type.tab.weight : Type.tabInactive.weight,
+                    color: isActive ? '#222' : Colors.textHint,
+                    lineHeight: `${Type.tab.lh}px`,
+                  }}>
+                    {tab.label}
+                  </span>
+                  {isActive && (
+                    <div className="absolute rounded-full bg-[#FF2442]"
+                      style={{ width: 28, height: 2, bottom: -2, left: '50%', transform: 'translateX(-50%)' }} />
+                  )}
+                </button>
+              )
+            })}
+          </div>
+
+          {/* 右侧: 搜索 */}
+          <button className="shrink-0 ml-[12px] flex items-center justify-center w-[22px] h-[22px]">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#333" strokeWidth="2" strokeLinecap="round">
+              <circle cx="10.5" cy="10.5" r="6.5"/>
+              <path d="M15.5 15.5L21 21"/>
+            </svg>
+          </button>
         </div>
       </div>
 
-      {/* 底部导航 */}
-      <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[375px] bg-white border-t border-[#eee] z-10" style={{ maxWidth: 375 }}>
-        <div className="flex items-center justify-around px-[10px] h-[50px]">
-          <button className="flex items-center justify-center"><span className="text-[#222] text-[16px] font-medium">首页</span></button>
-          <button className="flex items-center justify-center"><span className="text-[#999] text-[16px]">购物</span></button>
-          <div className="flex items-center justify-center"><img src="/发布.png" alt="publish" className="h-[30px] w-auto" /></div>
-          <button className="flex items-center justify-center"><span className="text-[#999] text-[16px]">消息</span></button>
-          <button className="flex items-center justify-center"><span className="text-[#999] text-[16px]">我</span></button>
+      {/* ── 瀑布流内容区 ── */}
+      <div className="w-full flex flex-col items-center" style={{ maxWidth: 375, background: Colors.pageBg }}>
+        <div style={{ padding: `5px 5px 90px` }}>
+          <div style={{ display: 'flex', gap: 5 }}>
+            {/* 左列 */}
+            <div style={{ width: 180, display: 'flex', flexDirection: 'column', gap: 5 }}>
+              {posts.filter((_, i) => i % 2 === 0).map(post => (
+                <PostCard key={post.id} post={post} onPost={onPost} />
+              ))}
+            </div>
+            {/* 右列 */}
+            <div style={{ width: 180, display: 'flex', flexDirection: 'column', gap: 5 }}>
+              {posts.filter((_, i) => i % 2 === 1).map(post => (
+                <PostCard key={post.id} post={post} onPost={onPost} />
+              ))}
+            </div>
+          </div>
+
+          {/* 哨兵 */}
+          <div ref={sentinelRef} className="py-4 flex justify-center">
+            {loading && (
+              <svg className="animate-spin h-5 w-5 text-[#FF2442]" viewBox="0 0 24 24" fill="none">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+              </svg>
+            )}
+          </div>
         </div>
-        <div className="flex justify-center pb-[8px]"><div className="w-[139px] h-[5px] rounded-[2.5px] bg-black" /></div>
       </div>
-      {/* 浮动上传入口 — 贴在 375px 内容区右侧边缘外 */}
+
+      {/* ── 底部导航栏 ── */}
+      <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full bg-white border-t border-[#eee] z-10 flex flex-col items-center"
+        style={{ maxWidth: 375 }}>
+        <div className="flex items-center justify-around w-full h-[50px] px-[10px]">
+          <span style={{ fontSize: Type.tab.size, fontWeight: Type.tab.weight, color: '#222' }}>首页</span>
+          <span style={{ fontSize: Type.tab.size, fontWeight: 400, color: Colors.textHint }}>购物</span>
+          <div className="flex items-center justify-center">
+            <img src="/发布.png" alt="publish" className="h-[30px] w-auto" />
+          </div>
+          <span style={{ fontSize: Type.tab.size, fontWeight: 400, color: Colors.textHint }}>消息</span>
+          <span style={{ fontSize: Type.tab.size, fontWeight: 400, color: Colors.textHint }}>我</span>
+        </div>
+        <div className="pb-[8px] flex justify-center">
+          <div className="w-[139px] h-[5px] rounded-[2.5px] bg-black" />
+        </div>
+      </div>
+
+      {/* ── 浮动上传入口 ── */}
       <button onClick={onUpload}
         style={{
-          position:'fixed', top:'50%', zIndex:40,
-          width:28, height:48,
-          left:'calc(50% + 187.5px)',
-          background:'rgba(255,255,255,0.9)',
-          borderTopLeftRadius:8, borderBottomLeftRadius:8,
-          border:'1px solid #e0e0e0', borderRight:'none',
-          display:'flex', alignItems:'center', justifyContent:'center',
-          cursor:'pointer',
-          transform:'translateY(-50%)',
-          boxShadow:'0 1px 8px rgba(0,0,0,0.06)',
+          position: 'fixed', top: '50%', zIndex: 40,
+          width: 28, height: 48,
+          left: 'calc(50% + 187.5px)',
+          background: 'rgba(255,255,255,0.9)',
+          borderTopLeftRadius: 8, borderBottomLeftRadius: 8,
+          border: '1px solid #e0e0e0', borderRight: 'none',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          cursor: 'pointer',
+          transform: 'translateY(-50%)',
+          boxShadow: '0 1px 8px rgba(0,0,0,0.06)',
         }}
         title="素材上传">
-        <span style={{ fontSize:18, color:'rgba(0,0,0,0.4)', lineHeight:'18px' }}>+</span>
+        <span style={{ fontSize: 18, color: 'rgba(0,0,0,0.4)', lineHeight: '18px' }}>+</span>
       </button>
+    </div>
+  )
+}
+
+// ─── 单个帖子卡片组件 ───
+function PostCard({ post, onPost }) {
+  const imgH = post.id % 3 === 0 ? 240 : 180
+
+  return (
+    <div onClick={() => onPost(post)}
+      className="bg-white rounded-[4px] overflow-hidden cursor-pointer active:opacity-90"
+      style={{ width: 180 }}>
+
+      {/* 封面图 */}
+      <div className="relative bg-[#f0f0f0] overflow-hidden" style={{ width: 180, height: imgH }}>
+        <img src={post.images[0]} alt="" className="w-full h-full object-cover" loading="lazy" />
+      </div>
+
+      {/* 内容区 */}
+      <div style={{ padding: '8px 8px 8px' }}>
+        {/* 标题 */}
+        <p style={{
+          fontSize: Type.cardTitle.size,
+          fontWeight: Type.cardTitle.weight,
+          lineHeight: `${Type.cardTitle.lh}px`,
+          color: Colors.textPrimary,
+          display: '-webkit-box',
+          WebkitLineClamp: 2,
+          WebkitBoxOrient: 'vertical',
+          overflow: 'hidden',
+          marginBottom: 6,
+        }}>
+          {post.title}
+        </p>
+
+        {/* 作者行 */}
+        <div className="flex items-center justify-between" style={{ height: 18 }}>
+          <div className="flex items-center min-w-0 flex-1" style={{ gap: 4 }}>
+            <div className="rounded-full bg-[#f5f5f5] flex items-center justify-center shrink-0 overflow-hidden"
+              style={{ width: 18, height: 18 }}>
+              <span style={{ fontSize: 9 }}>
+                {post.type === 'nail' ? '💅' : post.type === 'pet' ? '🐱' : post.type === 'rental' ? '🏠' : post.type === 'portrait' ? '📷' : '✨'}
+              </span>
+            </div>
+            <span style={{ fontSize: Type.nickname.size, fontWeight: Type.nickname.weight, color: Colors.textHint, lineHeight: `${Type.nickname.lh}px` }}
+              className="truncate">
+              {post.author}
+            </span>
+          </div>
+
+          {/* 点赞 */}
+          <div className="flex items-center shrink-0" style={{ gap: 2, marginLeft: 10 }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ccc" strokeWidth="2">
+              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+            </svg>
+            <span style={{ fontSize: Type.small.size, fontWeight: Type.small.weight, color: Colors.textHint }}>
+              {fmt(post.likes)}
+            </span>
+          </div>
+        </div>
       </div>
     </div>
   )

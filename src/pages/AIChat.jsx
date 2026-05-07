@@ -1,32 +1,30 @@
 import { useState, useRef, useEffect } from 'react'
+import { Colors, Type, Spacing, Radius, Icon } from '../config/design'
 import { AGENTS } from '../config/agents'
 
-// 三张功能卡片 — 从 AGENTS 配置取前三个
+// 所有 Agent 作为卡片
 const agentList = Object.entries(AGENTS)
-const FEATURE_CARDS = agentList.slice(0, 3).map(([id, a]) => ({
-  id, emoji: a.icon, title: a.label, desc: a.subLabel,
-  gradient: a.gradient, rotation: a.rotation, offsetY: a.offsetY,
-}))
 
-const QUICK_ACTIONS = [
-  ...agentList.map(([id, a]) => ({ icon: a.icon, label: a.label, action: id })),
-  { icon: '✨', label: '随便聊聊', action: 'chat' },
+// 图区展示卡片内容
+const CARD_DATA = [
+  { id: 'nail', title: '下一副美甲做什么款式？', subtitle: '美甲穿戴' },
+  { id: 'pet', title: '最近有什么值得看的展览', subtitle: '宠物装扮' },
+  { id: 'rental', title: '秋冬温泉度假\n3日游规划', subtitle: '看看户型' },
+  { id: 'portrait', title: '帮我挑个写真风格', subtitle: '试下写真' },
 ]
 
 const AI_REPLIES = {
-  'nail': '好的！美甲试戴走起 💅\n\n我可以帮你：\n• 挑选适合你的款式\n• AI 试戴看效果\n• 推荐附近美甲店\n\n点击下方「试戴」直接开始吧～',
-  'rental': '户型还原来啦 🏠\n\n看到租房帖子就来试：\n• 从图片分析户型\n• 生成简洁户型图\n• 看清房间布局\n\n给我一个租房帖子的链接试试～',
+  'nail': '好的！美甲试戴走起 💅\n\n我可以帮你：\n• 挑选适合你的款式\n• AI 试戴看效果\n• 推荐附近美甲店',
+  'rental': '户型还原来啦 🏠\n\n看到租房帖子就来试：\n• 从图片分析户型\n• 生成简洁户型图\n• 看清房间布局',
   'portrait': '写真风格推荐来啦 📷\n\n我可以帮你：\n• 识别写真风格\n• 推荐相似风格\n• 找到约拍资源',
-  'pet': '宠物穿搭安排 🐾\n\n上传毛孩子的照片：\n• AI 试穿不同装扮\n• 推荐好看的宠物服饰\n• 生成可爱效果图',
-  'chat': '嗨～想聊什么都可以！\n\n我是点点，你的生活小助手 ✨\n美甲、租房、写真、宠物穿搭，都能找我～',
+  'pet': '宠物穿搭安排 🐾\n\n上传毛孩子的照片：\n• AI 试穿不同装扮\n• 推荐好看的宠物服饰',
 }
 
 export default function AIChat({ onBack, onTryOn }) {
-  const [messages, setMessages] = useState([
-    { role: 'ai', text: '嗨！我是点点 ✨\n\n你的生活方式 AI 助手，美甲试戴、户型还原、宠物穿搭，找我就对了！' }
-  ])
+  const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [typing, setTyping] = useState(false)
+  const [started, setStarted] = useState(false)
   const scrollRef = useRef(null)
 
   useEffect(() => {
@@ -36,20 +34,37 @@ export default function AIChat({ onBack, onTryOn }) {
   }, [messages, typing])
 
   const sendMessage = (text) => {
-    if (!text.trim()) return
-    setMessages(prev => [...prev, { role: 'user', text: text.trim() }])
+    const clean = text.trim()
+    if (!clean) return
+    if (!started) setStarted(true)
+
+    setMessages(prev => [...prev, { role: 'user', text: clean }])
     setInput('')
     setTyping(true)
 
+    // 检查是否是 Agent 操作
+    const found = agentList.find(([id]) => id === clean)
+    if (found) {
+      const agent = found[1]
+      if (agent.page) {
+        setTimeout(() => {
+          setTyping(false)
+          setMessages(prev => [...prev, { role: 'ai', text: AI_REPLIES[found[0]] }])
+        }, 800)
+        return
+      }
+    }
+
     setTimeout(() => {
       setTyping(false)
-      const reply = AI_REPLIES[text.trim()] || `收到！让我想想...\n\n关于「${text.trim()}」，点点正在为你思考中～\n你也可以点击上方卡片快速体验哦 ✨`
+      const reply = AI_REPLIES[clean] || `收到！关于「${clean}」，点点正在为你思考中～\n\n你可以点击上方卡片快速体验功能哦 ✨`
       setMessages(prev => [...prev, { role: 'ai', text: reply }])
     }, 1200)
   }
 
-  const handleCardClick = (card) => {
-    const agent = AGENTS[card.id]
+  const handleCardTap = (card) => {
+    const [id] = agentList.find(([k]) => k === card.id) || []
+    const agent = AGENTS[id]
     if (agent?.page) {
       onTryOn()
       return
@@ -58,120 +73,205 @@ export default function AIChat({ onBack, onTryOn }) {
   }
 
   return (
-    <div className="min-h-screen bg-[#FAFAFA] relative overflow-x-hidden flex flex-col items-center"
-      style={{ fontFamily: "-apple-system, 'PingFang SC', sans-serif" }}>
-      <div className="w-full max-w-[375px] min-h-screen bg-white flex flex-col">
+    <div className="min-h-screen flex flex-col items-center"
+      style={{ fontFamily: "'PingFang SC', -apple-system, 'SF Pro', sans-serif", background: '#fff' }}>
 
-        {/* 顶栏 */}
-        <div className="flex items-center h-[52px] px-[16px] shrink-0">
-          <button onClick={onBack} className="active:scale-90 transition-transform">
-            <img src="/icons/back.svg" width={22} height={22} alt="back" />
-          </button>
-          <div className="flex-1 flex items-center justify-center gap-[8px]">
-            <span className="text-[rgba(0,0,0,0.8)] text-[15px] font-semibold">点点</span>
+      <div className="w-full flex flex-col relative" style={{ maxWidth: 375, height: '100vh' }}>
+
+        {/* ── SystemBar 系统状态栏 ── */}
+        <div className="w-full flex items-center justify-between px-[24px] h-[52px] shrink-0">
+          <span style={{ fontSize: 16.2, fontWeight: 590, color: '#000', fontFamily: "'SF Pro', -apple-system, sans-serif" }}>9:41</span>
+          <div className="flex items-center gap-[6px]">
+            <svg width="17" height="11" viewBox="0 0 17 11"><rect x="0" y="7" width="2" height="4" rx="0.5" fill="#000"/><rect x="3" y="5" width="2" height="6" rx="0.5" fill="#000"/><rect x="6" y="3" width="2" height="8" rx="0.5" fill="#000"/><rect x="9" y="0" width="2" height="11" rx="0.5" fill="#000"/></svg>
+            <svg width="17" height="11" viewBox="0 0 17 11"><path d="M0 5.5 Q4 2 8.5 5.5 T17 2" stroke="#000" strokeWidth="1.2" fill="none"/></svg>
+            <svg width="27" height="13" viewBox="0 0 27 13"><rect x="0" y="3" width="22" height="7" rx="1.5" stroke="#000" strokeWidth="1" fill="none"/><rect x="2" y="5" width="18" height="3" rx="0.5" fill="#000"/><rect x="23" y="1" width="3" height="11" rx="1" fill="#000"/></svg>
           </div>
-          <div className="w-[22px]" />
         </div>
 
-        {/* 点点形象 + 功能卡片 */}
-        <div className="px-[16px] pt-[8px] pb-[16px]">
-          {/* 点点头像 + 问候 */}
-          <div className="flex items-center gap-[12px] mb-[20px]">
-            <img src="/icons/diandian-avatar.png" alt="点点" className="w-[52px] h-[52px] rounded-[14px] object-cover" />
-            <div>
-              <p className="text-[rgba(0,0,0,0.8)] text-[16px] font-semibold leading-tight">嗨，我是点点</p>
-              <p className="text-[rgba(0,0,0,0.4)] text-[12px] mt-[2px]">你的生活方式 AI 助手</p>
+        {/* ── 标题栏 ── */}
+        <div className="w-full flex items-center px-[15px] h-[53px] shrink-0" style={{ gap: 15 }}>
+          <button onClick={onBack} className="shrink-0 active:scale-90 transition-transform"
+            style={{ width: 23, height: 23, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <svg width="9" height="17" viewBox="0 0 9 17" fill="none">
+              <path d="M8 1L1 8.5L8 16" stroke="#000" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </button>
+          <div className="flex items-center" style={{ gap: 6 }}>
+            <div className="rounded-full overflow-hidden shrink-0" style={{ width: 24, height: 24, background: '#FF2442' }}>
+              <img src="/icons/diandian-avatar.png" alt="点点" className="w-full h-full object-cover" />
             </div>
+            <span style={{
+              fontSize: Type.bodyBold.size, fontWeight: Type.bodyBold.weight, color: Colors.textPrimary,
+              lineHeight: `${Type.bodyBold.lh}px`,
+            }}>点点</span>
           </div>
+          <div className="flex-1" />
+          <button className="shrink-0 flex items-center justify-center" style={{ width: 23, height: 23 }}>
+            <svg width="17" height="3" viewBox="0 0 17 3" fill="#000">
+              <circle cx="1.5" cy="1.5" r="1.5"/><circle cx="8.5" cy="1.5" r="1.5"/><circle cx="15.5" cy="1.5" r="1.5"/>
+            </svg>
+          </button>
+        </div>
 
-          {/* 三张倾斜卡片 */}
-          <div className="relative h-[150px] mb-[4px]">
-            {FEATURE_CARDS.map((card) => (
-              <div key={card.id} onClick={() => handleCardClick(card)}
-                className="absolute w-[140px] h-[120px] rounded-[14px] cursor-pointer active:scale-95 transition-all overflow-hidden shadow-md"
-                style={{
-                  transform: `rotate(${card.rotation})`,
-                  top: card.offsetY,
-                  left: card.id === 'nail' ? '10px' : card.id === 'floorplan' ? '110px' : '210px',
-                  zIndex: card.id === 'floorplan' ? 3 : card.id === 'nail' ? 2 : 1,
+        {/* ── 可滚动内容区 ── */}
+        <div ref={scrollRef} className="flex-1 overflow-y-auto" style={{ paddingBottom: started ? 100 : 0 }}>
+          <div className="px-[23px] pt-[0px] pb-[27px]">
+            {/* — 欢迎区 — */}
+            <div style={{ marginBottom: 27 }}>
+              {/* 头像 + Hi */}
+              <div className="flex items-center mb-[11px]" style={{ gap: 11, height: 57 }}>
+                <div className="rounded-full overflow-hidden shrink-0" style={{ width: 46, height: 46, background: '#FF2442' }}>
+                  <img src="/icons/diandian-avatar.png" alt="点点" className="w-full h-full object-cover" />
+                </div>
+                <span style={{
+                  fontSize: Type.headline.size, fontWeight: Type.headline.weight, color: '#000',
+                  lineHeight: `${Type.headline.lh}px`,
                 }}>
-                <div className={`w-full h-full bg-gradient-to-br ${card.gradient} p-[14px] flex flex-col justify-between`}>
-                  <span className="text-[28px]">{card.emoji}</span>
-                  <div>
-                    <p className="text-white text-[14px] font-semibold leading-tight">{card.title}</p>
-                    <p className="text-white/70 text-[10px] mt-[2px]">{card.desc}</p>
+                  Hi，我是点点
+                </span>
+              </div>
+
+              {/* 介绍气泡 */}
+              <div style={{
+                background: '#F5F5F5',
+                borderRadius: 16, borderTopLeftRadius: 4,
+                padding: '11px 15px',
+                display: 'inline-block',
+                maxWidth: 286,
+              }}>
+                <span style={{
+                  fontSize: Type.subBody.size, fontWeight: Type.subBody.weight, color: Colors.textPrimary,
+                  lineHeight: `${Type.subBody.lh}px`,
+                }}>
+                  我是你的生活小帮手，买东西纠结、做旅游攻略，拿不定主意的都可以问我～
+                </span>
+              </div>
+            </div>
+
+            {/* — 功能卡片区 — */}
+            <div className="flex gap-0 overflow-x-auto" style={{ marginBottom: started ? 27 : 0, scrollbarWidth: 'none' }}>
+              {CARD_DATA.map((card, i) => {
+                const agent = AGENTS[card.id]
+                const isLast = i === CARD_DATA.length - 1
+                return (
+                  <button key={card.id} onClick={() => handleCardTap(card)}
+                    className="shrink-0 rounded-[14px] active:scale-95 transition-transform overflow-hidden flex flex-col justify-between relative"
+                    style={{
+                      width: 124, height: 147,
+                      background: `linear-gradient(135deg, ${['#FF6B9D', '#4ECDC4', '#A78BFA', '#F59E0B'][i]}, ${['#FF2442', '#2BAE66', '#7C3AED', '#EF4444'][i]})`,
+                      marginRight: isLast ? 0 : 8,
+                    }}>
+                    {/* 缩略图装饰 */}
+                    <div className="flex gap-[3px] p-[12px]">
+                      {[...Array(3)].map((_, j) => (
+                        <div key={j} className="rounded-[4px] bg-white/20" style={{ width: 29 + j * 2, height: 30 - j * 2 }} />
+                      ))}
+                    </div>
+                    <div className="px-[12px] pb-[12px]">
+                      <p className="text-white/80" style={{ fontSize: Type.chip.size, fontWeight: Type.chip.weight }}>
+                        {card.subtitle}
+                      </p>
+                      <p className="text-white font-semibold leading-tight mt-[2px]" style={{ fontSize: Type.chip.size }}>
+                        {card.title}
+                      </p>
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
+
+            {/* — 对话消息列表 — */}
+            {messages.map((m, i) => (
+              <div key={i} className={`flex mb-[16px] ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                {m.role === 'ai' && (
+                  <div className="rounded-lg overflow-hidden shrink-0 mr-[10px] mt-[4px]" style={{ width: 28, height: 28, background: '#FF2442' }}>
+                    <img src="/icons/diandian-avatar.png" alt="" className="w-full h-full object-cover" />
                   </div>
+                )}
+                <div className="whitespace-pre-line"
+                  style={{
+                    maxWidth: '75%',
+                    padding: '10px 14px',
+                    fontSize: Type.subBody.size,
+                    lineHeight: `${Type.subBody.lh}px`,
+                    borderRadius: 16,
+                    ...(m.role === 'user'
+                      ? { background: '#FF2442', color: '#fff', borderTopRightRadius: 4 }
+                      : { background: '#F5F5F5', color: 'rgba(0,0,0,0.7)', borderTopLeftRadius: 4 }),
+                  }}>
+                  {m.text}
                 </div>
               </div>
             ))}
+
+            {/* typing */}
+            {typing && (
+              <div className="flex justify-start mb-[16px]">
+                <div className="rounded-lg overflow-hidden shrink-0 mr-[10px] mt-[4px]" style={{ width: 28, height: 28, background: '#FF2442' }}>
+                  <img src="/icons/diandian-avatar.png" alt="" className="w-full h-full object-cover" />
+                </div>
+                <div className="flex items-center gap-[4px]" style={{
+                  background: '#F5F5F5', borderRadius: 16, borderTopLeftRadius: 4,
+                  padding: '12px 16px',
+                }}>
+                  <div className="w-[6px] h-[6px] rounded-full bg-[rgba(0,0,0,0.2)] animate-bounce" style={{ animationDelay: '0ms' }} />
+                  <div className="w-[6px] h-[6px] rounded-full bg-[rgba(0,0,0,0.2)] animate-bounce" style={{ animationDelay: '150ms' }} />
+                  <div className="w-[6px] h-[6px] rounded-full bg-[rgba(0,0,0,0.2)] animate-bounce" style={{ animationDelay: '300ms' }} />
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
-        {/* 对话区域 */}
-        <div ref={scrollRef} className="flex-1 overflow-y-auto px-[16px] py-[12px] flex flex-col gap-[16px]"
-          style={{ paddingBottom: '140px' }}>
-          {messages.map((m, i) => (
-            <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-              {m.role === 'ai' && (
-                <img src="/icons/diandian-avatar.png" alt="点点"
-                  className="w-[28px] h-[28px] rounded-[8px] object-cover shrink-0 mr-[10px] mt-[2px]" />
-              )}
-              <div className={`px-[14px] py-[10px] text-[14px] leading-[22px] max-w-[75%] whitespace-pre-line
-                ${m.role === 'user'
-                  ? 'bg-[#FF2442] text-white rounded-[16px] rounded-tr-[4px]'
-                  : 'bg-[#f5f5f5] text-[rgba(0,0,0,0.7)] rounded-[16px] rounded-tl-[4px]'}`}>
-                {m.text}
-              </div>
-            </div>
-          ))}
-
-          {typing && (
-            <div className="flex justify-start">
-              <img src="/icons/diandian-avatar.png" alt="点点"
-                className="w-[28px] h-[28px] rounded-[8px] object-cover shrink-0 mr-[10px] mt-[2px]" />
-              <div className="bg-[#f5f5f5] rounded-[16px] rounded-tl-[4px] px-[16px] py-[12px] flex items-center gap-[4px]">
-                <div className="w-[6px] h-[6px] rounded-full bg-[rgba(0,0,0,0.2)] animate-bounce" style={{ animationDelay: '0ms' }} />
-                <div className="w-[6px] h-[6px] rounded-full bg-[rgba(0,0,0,0.2)] animate-bounce" style={{ animationDelay: '150ms' }} />
-                <div className="w-[6px] h-[6px] rounded-full bg-[rgba(0,0,0,0.2)] animate-bounce" style={{ animationDelay: '300ms' }} />
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* 底部固定区 */}
-        <div className="fixed bottom-0 left-1/2 -translate-x-1/2 max-w-[375px] w-full bg-white border-t border-[#f0f0f0]">
-          {/* 快捷入口 */}
-          <div className="flex gap-[8px] px-[16px] pt-[10px] pb-[6px] overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
-            {QUICK_ACTIONS.map((action) => (
-              <button key={action.label}
-                onClick={() => {
-                  const agent = AGENTS[action.action]
-                  if (agent?.page) { onTryOn(); return }
-                  sendMessage(action.action)
-                }}
-                className="shrink-0 flex items-center gap-[4px] px-[12px] py-[6px] rounded-[16px] bg-[#f5f5f5] text-[rgba(0,0,0,0.6)] text-[12px] active:scale-95 transition-transform hover:bg-[#eee]">
-                <span>{action.icon}</span>
-                <span>{action.label}</span>
-              </button>
-            ))}
-          </div>
-
-          {/* 输入框 + 美甲试戴入口 */}
-          <div className="flex items-center gap-[8px] px-[16px] pb-[max(12px,env(safe-area-inset-bottom))]">
-            <div className="flex-1">
+        {/* ── 底部固定输入区 ── */}
+        <div className="shrink-0 bg-white" style={{ paddingBottom: 'max(8px, env(safe-area-inset-bottom))' }}>
+          {/* 输入行 */}
+          <div className="flex items-center px-[11px] pb-[11px]" style={{ gap: 8 }}>
+            <div className="flex-1 flex items-center bg-[#F5F5F5] border border-[#eee] rounded-[20px]"
+              style={{ padding: '11px 13px', gap: 8 }}>
+              {/* 语音图标 */}
+              <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="rgba(0,0,0,0.3)" strokeWidth="1.5" strokeLinecap="round">
+                <rect x="9" y="2" width="6" height="11" rx="3"/>
+                <path d="M5 10a7 7 0 0 0 14 0"/>
+                <line x1="12" y1="16" x2="12" y2="22"/>
+              </svg>
               <input value={input} onChange={e => setInput(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && sendMessage(input)}
-                placeholder="和点点聊聊..."
-                className="w-full bg-[#f5f5f5] border border-[#eee] rounded-[20px] px-[16px] py-[10px] text-[14px] text-[rgba(0,0,0,0.8)] placeholder-[rgba(0,0,0,0.25)] outline-none focus:border-[#7C3AED]/40 transition" />
+                placeholder="发消息或按住说话..."
+                className="flex-1 bg-transparent outline-none placeholder-[rgba(0,0,0,0.25)]"
+                style={{ fontSize: Type.body.size, color: Colors.textPrimary }} />
+              <div className="w-[1px] h-[17px] bg-[#ddd]" />
+              <div className="flex items-center" style={{ gap: 15 }}>
+                <button onClick={() => onTryOn()} className="shrink-0">
+                  <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="rgba(0,0,0,0.3)" strokeWidth="1.5" strokeLinecap="round">
+                    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                    <circle cx="12" cy="13" r="4"/>
+                  </svg>
+                </button>
+                <button className="shrink-0">
+                  <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="rgba(0,0,0,0.3)" strokeWidth="1.5">
+                    <circle cx="12" cy="12" r="10"/>
+                    <line x1="12" y1="7" x2="12" y2="17"/>
+                    <line x1="7" y1="12" x2="17" y2="12"/>
+                  </svg>
+                </button>
+              </div>
             </div>
-            <button onClick={() => onTryOn()}
-              className="shrink-0 flex items-center gap-[6px] px-[14px] py-[10px] rounded-[20px] bg-gradient-to-r from-[#FF6B9D] to-[#FF2442] text-white text-[13px] font-medium active:scale-95 transition-transform">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
-                <circle cx="12" cy="13" r="4"/>
-              </svg>
-              试戴
-            </button>
+          </div>
+
+          {/* 免责声明 */}
+          <div className="flex justify-center pb-[4px]">
+            <span style={{
+              fontSize: Type.disclaimer.size, fontWeight: Type.disclaimer.weight,
+              color: 'rgba(48,48,52,0.7)', lineHeight: `${Type.disclaimer.lh}px`,
+            }}>
+              内容由AI生成
+            </span>
+          </div>
+
+          {/* Home Indicator */}
+          <div className="flex justify-center pb-[8px]">
+            <div className="w-[133px] h-[5px] rounded-[2.5px] bg-black" />
           </div>
         </div>
       </div>
