@@ -136,24 +136,85 @@ export default function PostDetail({ post, onBack, onTryOn }) {
           <span style={{ fontSize: 11.5, color: 'rgba(0,0,0,0.3)', lineHeight: '17px' }}>·</span>
           <span style={{ fontSize: 11.5, color: '#576B95', lineHeight: '17px' }}>黄浦区新天地广场</span>
         </div>
+      </div>
 
-        {/* 创作者声明 */}
-        <div style={{
-          background: 'rgba(48,48,52,0.05)', borderRadius: 8,
-          padding: '8px 10px', marginBottom: 12,
-        }}>
-          <p style={{ fontSize: 11.5, lineHeight: '17px', color: 'rgba(0,0,0,0.45)' }}>
-            创作者声明：内容仅供参考，请谨慎甄别信息
-          </p>
+      {/* ── 评论区 (Figma: 153-4043) ── */}
+      {/* 分割线 */}
+      <div className="shrink-0" style={{ height: 1, background: '#F5F5F5', margin: '0 15px' }} />
+
+      {/* 评论标题 (pad 15/16/15/0, gap=20) */}
+      <div className="flex items-center shrink-0" style={{ padding: '16px 15px 0', gap: 20 }}>
+        <div style={{ position: 'relative' }}>
+          <span style={{ fontSize: 14, fontWeight: 500, color: 'rgba(0,0,0,0.8)', lineHeight: '20px' }}>
+            共 {Math.floor(post.likes * 0.05) + Math.floor(Math.random() * 30)} 条评论
+          </span>
+          <div style={{ width: 76, height: 2, borderRadius: 1, background: '#FF2442', marginTop: 2 }} />
         </div>
+      </div>
 
-        {/* 评论概览 */}
-        <p style={{
-          fontSize: 13.4, fontWeight: 500, color: 'rgba(0,0,0,0.8)', lineHeight: '19px',
-          paddingTop: 10, borderTop: '1px solid #F5F5F5',
+      {/* 评论输入框 (pad 15/16/15/4, gap=12) */}
+      <div className="flex items-center shrink-0" style={{ padding: '16px 15px 4px', gap: 12 }}>
+        <div className="rounded-full bg-[#f5f5f5] shrink-0" style={{ width: 36, height: 36 }} />
+        <div className="flex items-center" style={{
+          flex: 1, height: 34, borderRadius: 18, padding: '7px 16px', gap: 41,
+          background: 'rgba(48,48,52,0.05)',
         }}>
-          共 {Math.floor(post.likes * 0.05) + Math.floor(Math.random() * 30)} 条评论
-        </p>
+          <span style={{ fontSize: 14, color: 'rgba(0,0,0,0.3)', lineHeight: '20px' }}>喜欢就给个评论支持一下</span>
+          <div className="flex items-center" style={{ gap: 8 }}>
+            <span style={{ fontSize: 20, color: 'rgba(0,0,0,0.3)' }}>@</span>
+            <span style={{ fontSize: 20, color: 'rgba(0,0,0,0.3)' }}>😊</span>
+            <span style={{ fontSize: 20, color: 'rgba(0,0,0,0.3)' }}>🖼</span>
+          </div>
+        </div>
+      </div>
+
+      {/* 评论列表 */}
+      {[
+        { name: '倩碧', tag: '品牌', tagBg: 'rgba(48,48,52,0.08)', text: '倩碧痘敏肌专研重磅来袭！速成千净脸！立刻 get同款吧~', time: '10-29', ip: '上海', likes: 20 },
+        { name: 'Purple阿紫', tag: '作者', tagBg: 'rgba(255,36,66,0.08)', tagColor: '#FF2442', text: '哇～很喜欢这次的分享，平时就很喜欢看下次带上我', time: '10-29', ip: '上海', likes: 20, pinned: true },
+      ].map((c, i) => (
+        <div key={i} className="flex shrink-0" style={{ padding: '14px 15px', gap: 12 }}>
+          <div className="rounded-full bg-[#f5f5f5] shrink-0" style={{ width: 36, height: 36 }} />
+          <div className="flex-1 min-w-0">
+            {/* 用户名 + 标签 + 置顶 */}
+            <div className="flex items-center flex-wrap" style={{ gap: 4, marginBottom: 4 }}>
+              <span style={{ fontSize: 14, color: 'rgba(0,0,0,0.8)', lineHeight: '20px' }}>{c.name}</span>
+              {c.tag && (
+                <span style={{
+                  fontSize: 10, fontWeight: 500, lineHeight: '14px', padding: '0 6px',
+                  borderRadius: 9, background: c.tagBg || 'rgba(48,48,52,0.08)',
+                  color: c.tagColor || 'rgba(0,0,0,0.8)',
+                }}>{c.tag}</span>
+              )}
+              {c.pinned && (
+                <span style={{
+                  fontSize: 10, fontWeight: 500, lineHeight: '14px', padding: '0 6px',
+                  borderRadius: 9, background: 'rgba(255,36,66,0.08)', color: '#FF2442',
+                }}>置顶评论</span>
+              )}
+            </div>
+            {/* 评论内容 */}
+            <p style={{ fontSize: 14, color: 'rgba(0,0,0,0.8)', lineHeight: '22px' }}>{c.text}</p>
+            {/* 时间 + 回复 */}
+            <div className="flex items-center" style={{ gap: 4, marginTop: 4 }}>
+              <span style={{ fontSize: 12, color: 'rgba(0,0,0,0.3)', lineHeight: '16px' }}>{c.time}</span>
+              <span style={{ fontSize: 12, color: 'rgba(0,0,0,0.3)', lineHeight: '18px' }}>{c.ip}</span>
+              <span style={{ fontSize: 12, color: 'rgba(0,0,0,0.3)', lineHeight: '18px', marginLeft: 2 }}>回复</span>
+            </div>
+          </div>
+          {/* 点赞 (竖排, gap=2) */}
+          <div className="flex flex-col items-center shrink-0" style={{ gap: 2 }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(0,0,0,0.3)" strokeWidth="2">
+              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+            </svg>
+            <span style={{ fontSize: 12, color: 'rgba(0,0,0,0.3)', lineHeight: '18px' }}>{c.likes}</span>
+          </div>
+        </div>
+      ))}
+
+      {/* 底部分割 + 到底了 (height=64, gap=10) */}
+      <div className="flex flex-col items-center justify-center shrink-0" style={{ height: 48 }}>
+        <span style={{ fontSize: 12, color: 'rgba(0,0,0,0.3)', lineHeight: '18px' }}>- 到底了 -</span>
       </div>
 
       {/* ── 底部固定栏 (Figma: engage bar 375x53, pad 14.3/9.5, gap 11.5) ── */}
@@ -164,7 +225,6 @@ export default function PostDetail({ post, onBack, onTryOn }) {
           borderTop: '1px solid rgba(0,0,0,0.05)',
           gap: 11.5,
         }}>
-        {/* 输入框 (156x34, bg rgba(48,48,52,0.05), pad 7.6, gap 3.8) */}
         <div className="flex items-center" style={{
           width: 156, height: 34, gap: 3.8, padding: '7.6px 11.5px',
           background: 'rgba(48,48,52,0.05)', borderRadius: 17,
@@ -172,8 +232,6 @@ export default function PostDetail({ post, onBack, onTryOn }) {
           <img src="/icons/edit.svg" width={20} height={20} alt="edit" />
           <span style={{ fontSize: 13.4, color: 'rgba(0,0,0,0.45)', lineHeight: '17px' }}>说点什么...</span>
         </div>
-
-        {/* 互动图标 (HORIZONTAL 左右排列, gap 9.5, 内 gap 3.8) */}
         <div className="flex items-center" style={{ gap: 9.5 }}>
           <button onClick={() => setLiked(!liked)} className="flex items-center" style={{ gap: 3.8 }}>
             <img src="/icons/like.svg" width={28} height={28} alt="like"
@@ -182,12 +240,10 @@ export default function PostDetail({ post, onBack, onTryOn }) {
               {post.likes + (liked ? 1 : 0)}
             </span>
           </button>
-
           <div className="flex items-center" style={{ gap: 3.8 }}>
             <img src="/icons/collect.svg" width={28} height={28} alt="collect" />
             <span style={{ fontSize: 13.4, fontWeight: 500, color: 'rgba(0,0,0,0.8)', lineHeight: '18px' }}>46</span>
           </div>
-
           <div className="flex items-center" style={{ gap: 3.8 }}>
             <img src="/icons/chat.svg" width={28} height={28} alt="chat" />
             <span style={{ fontSize: 13.4, fontWeight: 500, color: 'rgba(0,0,0,0.8)', lineHeight: '18px' }}>19</span>
