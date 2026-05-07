@@ -96,14 +96,14 @@ export default function Feed({ onPost, onAIChat, onUpload }) {
 
         {/* ── SystemBar 系统状态栏 ── */}
         <div className="w-full flex items-center justify-start px-[16px] h-[44px]" style={{ maxWidth: 375 }}>
-          <img src="/icons/systembar.svg" alt="" className="h-[20px] w-auto" />
+          <img src="/icons/systembar.svg" alt="" className="w-full h-[44px]" />
         </div>
 
         {/* ── 导航栏: menu + Tab + search ── */}
         <div className="w-full flex items-center px-[16px] h-[44px]" style={{ maxWidth: 375 }}>
           {/* 左侧: 点点入口 */}
           <button onClick={onAIChat} className="shrink-0 mr-[12px] flex items-center justify-center">
-            <img src="/icons/dots.png" alt="dots" className="w-[22px] h-[22px]" />
+            <img src="/icons/dots.svg" alt="dots" className="w-[22px] h-[22px]" />
           </button>
 
           {/* 中间: Tab */}
@@ -132,7 +132,7 @@ export default function Feed({ onPost, onAIChat, onUpload }) {
 
           {/* 右侧: 搜索 */}
           <button className="shrink-0 ml-[12px] flex items-center justify-center">
-            <img src="/icons/search.png" alt="search" className="w-[22px] h-[22px]" />
+            <img src="/icons/search.svg" alt="search" className="w-[22px] h-[22px]" />
           </button>
         </div>
       </div>

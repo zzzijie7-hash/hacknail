@@ -79,13 +79,8 @@ export default function AIChat({ onBack, onTryOn }) {
       <div className="w-full flex flex-col relative" style={{ maxWidth: 375, height: '100vh' }}>
 
         {/* ── SystemBar 系统状态栏 ── */}
-        <div className="w-full flex items-center justify-between px-[24px] h-[52px] shrink-0">
-          <span style={{ fontSize: 16.2, fontWeight: 590, color: '#000', fontFamily: "'SF Pro', -apple-system, sans-serif" }}>9:41</span>
-          <div className="flex items-center gap-[6px]">
-            <svg width="17" height="11" viewBox="0 0 17 11"><rect x="0" y="7" width="2" height="4" rx="0.5" fill="#000"/><rect x="3" y="5" width="2" height="6" rx="0.5" fill="#000"/><rect x="6" y="3" width="2" height="8" rx="0.5" fill="#000"/><rect x="9" y="0" width="2" height="11" rx="0.5" fill="#000"/></svg>
-            <svg width="17" height="11" viewBox="0 0 17 11"><path d="M0 5.5 Q4 2 8.5 5.5 T17 2" stroke="#000" strokeWidth="1.2" fill="none"/></svg>
-            <svg width="27" height="13" viewBox="0 0 27 13"><rect x="0" y="3" width="22" height="7" rx="1.5" stroke="#000" strokeWidth="1" fill="none"/><rect x="2" y="5" width="18" height="3" rx="0.5" fill="#000"/><rect x="23" y="1" width="3" height="11" rx="1" fill="#000"/></svg>
-          </div>
+        <div className="w-full flex items-center px-0 h-[44px] shrink-0" style={{ maxWidth: 375 }}>
+          <img src="/icons/systembar.svg" alt="" className="w-full h-[44px]" />
         </div>
 
         {/* ── 标题栏 ── */}
