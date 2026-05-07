@@ -47,13 +47,24 @@ function fmt(n) {
 
 // Tab 配置
 const TABS = [
-  { key: 'follow', label: '关注' },
+  { key: 'follow', label: '关注', hasExpand: true },
   { key: 'discover', label: '发现' },
   { key: 'nearby', label: '附近' },
 ]
 
+// 次级导航标签
+const SUB_TABS = [
+  { key: 'recommend', label: '推荐' },
+  { key: 'nail', label: '美甲' },
+  { key: 'pet', label: '宠物' },
+  { key: 'rental', label: '租房' },
+  { key: 'portrait', label: '写真' },
+  { key: 'live', label: '直播' },
+]
+
 export default function Feed({ onPost, onAIChat, onUpload }) {
   const [activeTab, setActiveTab] = useState('discover')
+  const [activeSubTab, setActiveSubTab] = useState('recommend')
   const [poolMap, setPoolMap] = useState(null)
   const [posts, setPosts] = useState([])
   const [loading, setLoading] = useState(false)
@@ -113,14 +124,19 @@ export default function Feed({ onPost, onAIChat, onUpload }) {
               return (
                 <button key={tab.key} onClick={() => setActiveTab(tab.key)}
                   className="relative pb-[2px] flex flex-col items-center">
-                  <span style={{
-                    fontSize: Type.tab.size,
-                    fontWeight: isActive ? Type.tab.weight : Type.tabInactive.weight,
-                    color: isActive ? '#222' : Colors.textHint,
-                    lineHeight: `${Type.tab.lh}px`,
-                  }}>
-                    {tab.label}
-                  </span>
+                  <div className="flex items-center">
+                    <span style={{
+                      fontSize: Type.tab.size,
+                      fontWeight: isActive ? Type.tab.weight : Type.tabInactive.weight,
+                      color: isActive ? '#222' : Colors.textHint,
+                      lineHeight: `${Type.tab.lh}px`,
+                    }}>
+                      {tab.label}
+                    </span>
+                    {tab.hasExpand && (
+                      <img src="/icons/expand-tab.svg" alt="" style={{ width: 16, height: 16, marginLeft: 2 }} />
+                    )}
+                  </div>
                   {isActive && (
                     <div className="absolute rounded-full bg-[#FF2442]"
                       style={{ width: 28, height: 2, bottom: -2, left: '50%', transform: 'translateX(-50%)' }} />
@@ -135,6 +151,29 @@ export default function Feed({ onPost, onAIChat, onUpload }) {
             <img src="/icons/search.svg" alt="search" style={{ width: 48, height: 44, marginRight: -8 }} />
           </button>
         </div>
+      </div>
+
+      {/* ── 次级导航栏 ── */}
+      <div className="w-full bg-white flex items-center px-[16px] h-[36px] gap-[20px] overflow-x-auto"
+        style={{ maxWidth: 375, scrollbarWidth: 'none' }}>
+        {SUB_TABS.map(st => {
+          const isActive = activeSubTab === st.key
+          return (
+            <button key={st.key} onClick={() => setActiveSubTab(st.key)}
+              className="shrink-0 relative h-full flex items-center">
+              <span style={{
+                fontSize: 14, fontWeight: isActive ? 500 : 400,
+                color: isActive ? '#222' : Colors.textHint,
+                lineHeight: '20px',
+              }}>
+                {st.label}
+              </span>
+              {isActive && (
+                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[20px] h-[2px] rounded-full bg-[#FF2442]" />
+              )}
+            </button>
+          )
+        })}
       </div>
 
       {/* ── 瀑布流内容区 ── */}
@@ -253,9 +292,7 @@ function PostCard({ post, onPost }) {
 
           {/* 点赞 */}
           <div className="flex items-center shrink-0" style={{ gap: 2, marginLeft: 10 }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ccc" strokeWidth="2">
-              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-            </svg>
+            <img src="/icons/like-heart.svg" alt="like" style={{ width: 16, height: 16 }} />
             <span style={{ fontSize: Type.small.size, fontWeight: Type.small.weight, color: Colors.textHint }}>
               {fmt(post.likes)}
             </span>
