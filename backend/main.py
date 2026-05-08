@@ -157,39 +157,123 @@ async def cyber_nails(hand: UploadFile = File(...), nail: UploadFile = File(None
     else:
         raise HTTPException(400, "需要提供美甲图")
 
+    # 压缩图片
     def compress(data, max_size=1024):
         img = Image.open(io.BytesIO(data)).convert("RGB")
         if max(img.size) > max_size:
             img.thumbnail((max_size, max_size), Image.LANCZOS)
         buf = io.BytesIO()
-        img.save(buf, format="JPEG", quality=85)
+        img.save(buf, format="PNG", quality=90)
         return buf.getvalue()
 
-    hand_data = compress(hand_data)
-    nail_data = compress(nail_data)
+    hand_compressed = compress(hand_data)
+    nail_compressed = compress(nail_data)
+
+    style_raw = await _analyze_nail_style(nail_compressed)
     prompt = (
-        "Edit the first image (hand photo): replace the nails on this hand with the nail art design shown in the second image. "
-        "Requirements: precisely replicate each nail's design from the second image onto the corresponding nail of the first image. "
-        "Keep the hand skin, background, and lighting completely unchanged. Only modify the nail area. "
-        "Output the edited image directly."
+        "Edit the hand photo: apply ONLY to the fingernail areas the nail art design "
+        "described in this JSON specification. \n\n"
+        f"DESIGN SPECIFICATION:\n{style_raw}\n\n"
+        "Follow the JSON exactly: each finger's base color, pattern, accent, and decorations "
+        "must match the specification. Replicate all decorations precisely — count, type, "
+        "color, and position on the correct finger. "
+        "Do NOT change any skin, background, or lighting. Only the nails. "
+        "Make nails look like a real photograph with natural perspective and shading."
     )
 
     if _current_provider == "openai":
         try:
-            return await _openai_edits(hand_data, nail_data, prompt)
+            return await _openai_masked_edits(hand_compressed, nail_compressed, prompt)
         except Exception as e:
             print(f"[OpenAI failed, fallback]: {e}")
-            return await _grok_gen(hand_data, nail_data, prompt)
+            return await _grok_masked_gen(hand_compressed, nail_compressed, prompt)
     else:
-        return await _grok_gen(hand_data, nail_data, prompt)
+        return await _grok_masked_gen(hand_compressed, nail_compressed, prompt)
 
-async def _openai_edits(hd, nd, prompt):
+
+async def _analyze_nail_style(nail_data):
+    """用 Vision 模型解析参考美甲图，输出结构化 JSON 款式描述"""
+    nb64 = base64.b64encode(nail_data).decode()
+    prompt = """Analyze this nail art photo and output a structured JSON description. Be extremely precise about colors, patterns, and decorations.
+
+Output ONLY valid JSON, no markdown:
+
+{
+  "style": "overall style in English (e.g. soft nude elegant / y2k glam / korean minimalist)",
+  "finish": "glossy / matte / glitter / chrome / velvet",
+  "base_color": "exact base color name with modifier (e.g. milky nude pink / sheer ballet pink)",
+  "nail_shape": "short oval / long almond / square / coffin / stiletto",
+  "color_scheme": ["dominant color 1", "dominant color 2"],
+  "has_gradient": true,
+  "gradient_desc": "from X to Y direction, or null if no gradient",
+  "has_pattern": true,
+  "pattern_desc": "describe any stripes/dots/marble/check pattern, or null",
+  "design_summary": "1 sentence visual summary of the full design",
+
+  "per_finger": [
+    {"finger": "thumb", "base_color": "...", "accent": null, "pattern": "solid", "decorations": []},
+    {"finger": "index", "base_color": "...", "accent": null, "pattern": "solid", "decorations": []},
+    {"finger": "middle", "base_color": "...", "accent": null, "pattern": "solid", "decorations": []},
+    {"finger": "ring", "base_color": "...", "accent": null, "pattern": "solid", "decorations": []},
+    {"finger": "pinky", "base_color": "...", "accent": null, "pattern": "solid", "decorations": []}
+  ],
+
+  "decorations": [
+    {"type": "pearl / gem / rhinestone / foil / sticker / charm", "count": 1, "position": "center of ring finger", "color": "white", "size": "small / medium / large"}
+  ],
+
+  "technique": "cat eye / magnetic / syrup / 3d gel / airbrush / hand-painted",
+  "edge_style": "micro french tip / rounded free edge / clean cuticle line / rough edge",
+
+  "ref_colors_hex": ["#XXXXXX", "#YYYYYY"],
+  "notes": "any additional details crucial for accurate reproduction"
+}"""
+    try:
+        api_key = OPENAI_API_KEY or FALLBACK_API_KEY
+        base_url = OPENAI_BASE_URL if OPENAI_API_KEY else FALLBACK_BASE_URL
+        async with httpx.AsyncClient(timeout=120) as c:
+            resp = await c.post(
+                f"{base_url}/chat/completions",
+                headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+                json={
+                    "model": "gpt-4.1-mini",
+                    "response_format": {"type": "json_object"},
+                    "messages": [{"role": "user", "content": [
+                        {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{nb64}", "detail": "high"}},
+                        {"type": "text", "text": prompt},
+                    ]}],
+                    "max_tokens": 2000,
+                })
+        if resp.status_code == 200:
+            data = resp.json()
+            raw = data["choices"][0]["message"]["content"].strip()
+            try:
+                parsed = json.loads(raw)
+                print(f"[style] parsed JSON with {len(parsed.get('per_finger', []))} fingers")
+                return json.dumps(parsed, ensure_ascii=False)
+            except json.JSONDecodeError:
+                print(f"[style] JSON parse failed, raw: {raw[:200]}")
+                return raw
+    except Exception as e:
+        print(f"[style analysis failed]: {e}")
+    return '{"style": "unknown", "design_summary": "a nail art design matching the reference image"}'
+
+
+
+async def _openai_masked_edits(hd, nd, prompt):
+    files = [("image", ("hand.png", hd, "image/png"))]
     async with httpx.AsyncClient(timeout=300) as c:
-        resp = await c.post(f"{OPENAI_BASE_URL}/images/edits",
+        resp = await c.post(
+            f"{OPENAI_BASE_URL}/images/edits",
             headers={"Authorization": f"Bearer {OPENAI_API_KEY}"},
-            data={"model": "gpt-image-1", "prompt": prompt, "n": "1", "size": "1024x1024"},
-            files=[("image[]", ("hand.jpg", hd, "image/jpeg")),
-                   ("image[]", ("nail.jpg", nd, "image/jpeg"))])
+            data={
+                "model": "gpt-image-1",
+                "prompt": prompt,
+                "n": "1",
+                "size": "1024x1024",
+            },
+            files=files,
+        )
     if resp.status_code != 200:
         raise Exception(f"OpenAI error {resp.status_code}: {resp.text[:500]}")
     data = resp.json()
@@ -197,18 +281,29 @@ async def _openai_edits(hd, nd, prompt):
         b64 = data["data"][0].get("b64_json")
         if b64:
             return JSONResponse({"image": f"data:image/png;base64,{b64}"})
+        url = data["data"][0].get("url")
+        if url:
+            async with httpx.AsyncClient(timeout=60) as ic:
+                ir = await ic.get(url)
+            return JSONResponse({"image": f"data:image/png;base64,{base64.b64encode(ir.content).decode()}"})
     raise Exception(f"No image: {json.dumps(data)[:500]}")
 
-async def _grok_gen(hd, nd, prompt):
+
+async def _grok_masked_gen(hd, nd, prompt):
     hb64 = base64.b64encode(hd).decode()
     nb64 = base64.b64encode(nd).decode()
+    content = [
+        {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{hb64}"}},
+        {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{nb64}"}},
+        {"type": "text", "text": prompt},
+    ]
+
     async with httpx.AsyncClient(timeout=300) as c:
-        resp = await c.post(f"{FALLBACK_BASE_URL}/chat/completions",
+        resp = await c.post(
+            f"{FALLBACK_BASE_URL}/chat/completions",
             headers={"Authorization": f"Bearer {FALLBACK_API_KEY}", "Content-Type": "application/json"},
-            json={"model": "grok-3-image", "messages": [{"role": "user", "content": [
-                {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{hb64}"}},
-                {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{nb64}"}},
-                {"type": "text", "text": prompt}]}]})
+            json={"model": "grok-3-image", "messages": [{"role": "user", "content": content}]},
+        )
     data = resp.json()
     if "error" in data or "choices" not in data:
         raise HTTPException(500, str(data))

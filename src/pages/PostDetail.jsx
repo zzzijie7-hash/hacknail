@@ -121,9 +121,7 @@ export default function PostDetail({ post, onBack, onTryOn }) {
                 fontSize: 13, fontWeight: 500, lineHeight: '20px',
               }}>
               试同款
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                <path d="M4 1L11 7L4 13" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
+              <img src="/icons/tryon-arrow.svg" width={14} height={14} alt="" />
             </button>
           )}
         </div>

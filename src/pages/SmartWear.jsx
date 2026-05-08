@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useMemo } from 'react'
 import NailLibraryPanel from '../components/NailLibraryPanel'
+import LoadingAnim from '../components/LoadingAnim'
 import { loadLibrary, saveLibrary } from '../utils/nailLibrary'
 
 /* ── 内联 Icon SVG ── */
@@ -13,14 +14,6 @@ const IconCheck = () => (
   <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M5 13L10 18L19 7" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
 )
 
-const FUNNY_TEXTS = [
-  '正在为你精心穿戴中...',
-  '指尖魔法酝酿中...',
-  '美甲精灵正在工作...',
-  '别急，好看的需要点时间~',
-  '手指也要穿新衣...',
-]
-
 export default function SmartWear({
   onBack, onBuySimilar, onFindShops, onUpload,
   initialNails, nailStyle, onNailStyleChange,
@@ -32,7 +25,6 @@ export default function SmartWear({
 }) {
   const [libraryOpen, setLibraryOpen] = useState(false)
   const [showPanel, setShowPanel] = useState(false)
-  const [funnyIdx, setFunnyIdx] = useState(0)
   const [error, setError] = useState(null)
   const [imgIdx, setImgIdx] = useState(0)
   const [mode, setMode] = useState('capture') // capture | confirm | generating | result
@@ -51,13 +43,6 @@ export default function SmartWear({
   }, [nailStyle])
   const curNail = groupImages[imgIdx] || nailStyle
   useEffect(() => { setImgIdx(0) }, [nailStyle?.groupId])
-
-  // 趣味文案轮播
-  useEffect(() => {
-    if (mode !== 'generating') return
-    const t = setInterval(() => setFunnyIdx(i => (i + 1) % FUNNY_TEXTS.length), 2500)
-    return () => clearInterval(t)
-  }, [mode])
 
   // 自动导入帖子款式
   useEffect(() => {
@@ -154,7 +139,7 @@ export default function SmartWear({
       <button onClick={() => setLibraryOpen(true)} style={{
         flex: 1, height: 100, borderRadius: 16, border: '1px solid #EAEAEA',
         background: 'white', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '0 18px', opacity: 0.5, boxShadow: '0px 2px 7px rgba(0,0,0,0.25)', overflow: 'hidden',
+        padding: '0 18px', boxShadow: '0px 2px 7px rgba(0,0,0,0.06)', overflow: 'hidden',
       }}>
         <div style={{ textAlign: 'left', flexShrink: 0 }}>
           <div style={{ fontSize: 14, fontWeight: 500, color: '#141414', lineHeight: '20px', marginBottom: 6 }}>美甲库</div>
@@ -294,17 +279,17 @@ export default function SmartWear({
   const GeneratingPage = (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
       <StyleSelector highlight={false} />
-      <Viewfinder style={{ background: '#f5f5f5' }}>
-        {hpUrl && <img src={hpUrl} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.6 }} />}
-        <div style={{ position: 'absolute', inset: 0, background: 'rgba(255,255,255,0.7)', backdropFilter: 'blur(2px)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16 }}>
-          <div style={{ width: 56, height: 56 }}>
-            <svg className="animate-spin" width="56" height="56" viewBox="0 0 56 56"><defs><linearGradient id="gg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#FF2442"/><stop offset="50%" stopColor="#FF6B8A"/><stop offset="100%" stopColor="#FFB3C6"/></linearGradient></defs><circle cx="28" cy="28" r="22" fill="none" stroke="#f0f0f0" strokeWidth="3"/><circle cx="28" cy="28" r="22" fill="none" stroke="url(#gg)" strokeWidth="3" strokeLinecap="round" strokeDasharray="80 138"/></svg>
+      <Viewfinder style={{ background: '#fcfcfc' }}>
+        {hpUrl && <img src={hpUrl} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.35 }} />}
+        <div style={{ position: 'absolute', inset: 0, background: 'rgba(255,255,255,0.55)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 14 }}>
+          <LoadingAnim category="nail" size={56} />
+          <div style={{ width: 140, height: 3, borderRadius: 2, background: '#eee', overflow: 'hidden' }}>
+            <div style={{ height: '100%', borderRadius: 2, width: `${progress || 0}%`,
+              background: 'linear-gradient(90deg, #FF2442, #FF6B8A)', transition: 'width 0.4s' }} />
           </div>
-          <span style={{ fontSize: 14, fontWeight: 500, color: 'rgba(0,0,0,0.55)' }}>{FUNNY_TEXTS[funnyIdx]}</span>
-          <div style={{ width: 140, height: 4, borderRadius: 2, background: '#eee', overflow: 'hidden' }}>
-            <div style={{ height: '100%', borderRadius: 2, width: `${progress || 0}%`, background: 'linear-gradient(90deg, #FF2442, #FF6B8A)', transition: 'width 0.5s' }} />
-          </div>
-          <span style={{ fontSize: 11, color: 'rgba(0,0,0,0.3)' }}>预计还需 {Math.max(1, Math.round((100 - (progress || 0)) / 15))} 秒</span>
+          <span style={{ fontSize: 11, color: 'rgba(0,0,0,0.3)' }}>
+            预计还需 {Math.max(1, Math.round((100 - (progress || 0)) / 12))} 秒
+          </span>
         </div>
       </Viewfinder>
       {error && (
