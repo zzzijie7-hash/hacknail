@@ -1,11 +1,34 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { getAgent } from '../config/agents'
+import { loadLibrary, saveLibrary } from '../utils/nailLibrary'
 
 export default function PostDetail({ post, onBack, onTryOn }) {
   const [liked, setLiked] = useState(false)
   const [collected, setCollected] = useState(false)
   const [currentImg, setCurrentImg] = useState(0)
   const [swipeStart, setSwipeStart] = useState(null)
+
+  // 进帖子自动将图片导入对应类别美甲库
+  useEffect(() => {
+    if (!post) return
+    const cat = post.type || 'nail'
+    const imgs = post.images || []
+    if (!imgs.length) return
+    const all = loadLibrary()
+    const existingSrcs = new Set(all.map(n => n.src))
+    const gid = 'post_' + post.id
+    // 帖子导入组已存在则跳过
+    if (all.some(n => n.groupId === gid)) return
+    const gLabel = post.author ? `${post.author}的帖子` : '帖子导入'
+    const toAdd = []
+    imgs.forEach((src, i) => {
+      const url = src.replace('http://', 'https://')
+      if (!existingSrcs.has(url)) {
+        toAdd.push({ id: Date.now() + i, src: url, groupId: gid, groupLabel: gLabel, category: cat })
+      }
+    })
+    if (toAdd.length) saveLibrary([...all, ...toAdd])
+  }, [post?.id])
 
   if (!post) return null
 

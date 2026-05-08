@@ -10,19 +10,20 @@ const STYLE = {
     pointerEvents: open ? 'auto' : 'none',
     transition: 'opacity 0.3s',
   }),
-  sheet: (open) => ({
+  sheet: (open, height) => ({
     position: 'fixed',
     bottom: 0,
     left: '50%',
     zIndex: 50,
     width: '100%',
     maxWidth: 393,
+    height: height || undefined,
+    maxHeight: height ? undefined : '80vh',
     background: '#ffffff',
     borderTopLeftRadius: 12,
     borderTopRightRadius: 12,
     display: 'flex',
     flexDirection: 'column',
-    maxHeight: '80vh',
     transform: open
       ? 'translateX(-50%) translateY(0)'
       : 'translateX(-50%) translateY(100%)',
@@ -69,7 +70,7 @@ const STYLE = {
   },
 }
 
-export default function BottomPanel({ open, onClose, title, children }) {
+export default function BottomPanel({ open, onClose, title, children, height }) {
   useEffect(() => {
     if (open) document.body.style.overflow = 'hidden'
     else document.body.style.overflow = ''
@@ -79,7 +80,7 @@ export default function BottomPanel({ open, onClose, title, children }) {
   return (
     <>
       <div style={STYLE.overlay(open)} onClick={onClose} />
-      <div style={STYLE.sheet(open)}>
+      <div style={STYLE.sheet(open, height)}>
         <div style={STYLE.header}>
           <span style={STYLE.title}>{title}</span>
           <button style={STYLE.closeBtn} onClick={onClose}>
