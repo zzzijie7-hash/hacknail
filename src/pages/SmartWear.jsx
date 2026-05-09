@@ -547,7 +547,7 @@ export default function SmartWear({
     onLoadingChange?.(false)
   }, [onLoadingChange, onProgressChange, onResultChange])
 
-  const startGenerate = async (forcedProvider = 'grok', forcedShape = selectedShape) => {
+  const startGenerate = async (forcedProvider = 'openai', forcedShape = selectedShape) => {
     if (!handFile || !curNail) return
     if (!handPreviewUrlRef.current && !hpUrl) {
       try {
@@ -577,7 +577,7 @@ export default function SmartWear({
       onProgressChange?.(prog)
     }, 700)
     const form = new FormData()
-    form.append('hand', handFile); form.append('provider', forcedProvider || 'grok'); form.append('nail_shape', forcedShape)
+    form.append('hand', handFile); form.append('provider', forcedProvider || 'openai'); form.append('nail_shape', forcedShape)
     if (curNail.src.startsWith('data:')) {
       const arr = curNail.src.split(','), mime = arr[0].match(/:(.*?);/)?.[1] || 'image/jpeg'
       form.append('nail', new Blob([Uint8Array.from(atob(arr[1]), c => c.charCodeAt(0))], { type: mime }), 'nail.jpg')

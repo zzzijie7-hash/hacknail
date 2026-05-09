@@ -25,7 +25,7 @@ export default function App() {
   const [progress, setProgress] = useState(0)
 
   const [feedKey, setFeedKey] = useState(0)
-  const [provider, setProvider] = useState('grok')
+  const [provider, setProvider] = useState('openai')
   const [selectedProduct, setSelectedProduct] = useState(null)
 
   let currentPage = null

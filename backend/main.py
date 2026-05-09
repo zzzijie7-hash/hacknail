@@ -25,7 +25,7 @@ OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
 OPENAI_BASE_URL = os.environ.get("OPENAI_BASE_URL", "https://api.openai.com/v1")
 FALLBACK_API_KEY = os.environ.get("FALLBACK_API_KEY", "sk-TD5mko9EUjlhT293pGfzrw7pcVKb4yq9BnKvQTP3IKiAXR6q")
 FALLBACK_BASE_URL = "https://yungpt.com/v1"
-_current_provider = "grok"
+_current_provider = "openai"
 
 # ── manifest.json 读写 ──────────────────────────────────
 def _load_manifest():
