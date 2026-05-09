@@ -9,8 +9,8 @@ const DEFAULT_POINTS = [
 ]
 
 const WORK_SWINGS = 4
-const SWING_MS = 520
-const MOVE_MS = 2400
+const SWING_MS = 200
+const MOVE_MS = 2600
 const WORKER_SIZE = 64
 
 const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms))
@@ -32,6 +32,7 @@ export default function NailPaintingAnim({
   active = true,
   showDebugPoints = true,
   onComplete,
+  onPhaseChange,
 }) {
   const normalizedPoints = useMemo(
     () => (points.length ? points : DEFAULT_POINTS).map(clampPoint),
@@ -70,14 +71,14 @@ export default function NailPaintingAnim({
       setWorkerPos(normalizedPoints[0])
       setWorkerAngle(-12)
       setFlipX(1)
-      await wait(420)
-      if (cancelled) return
+      onPhaseChange?.('work')
 
       for (let i = 0; i < normalizedPoints.length; i += 1) {
         const point = normalizedPoints[i]
         setCurrentIndex(i)
         setWorkerPos(point)
         setPhase('work')
+        onPhaseChange?.('work')
         setWorkerAngle(-16)
         setSegment(null)
 
@@ -95,6 +96,7 @@ export default function NailPaintingAnim({
 
         const nextPoint = normalizedPoints[i + 1]
         setPhase('move')
+        onPhaseChange?.('move')
         setPathVisible(true)
         setSegment({ from: point, to: nextPoint })
         setFlipX(nextPoint.x >= point.x ? 1 : -1)
@@ -111,6 +113,7 @@ export default function NailPaintingAnim({
         const point = normalizedPoints[i]
         const prevPoint = normalizedPoints[i - 1]
         setPhase('return')
+        onPhaseChange?.('return')
         setPathVisible(true)
         setSegment({ from: point, to: prevPoint })
         setFlipX(prevPoint.x >= point.x ? 1 : -1)
@@ -126,6 +129,7 @@ export default function NailPaintingAnim({
 
       if (cancelled) return
       setPhase('done')
+      onPhaseChange?.('done')
       setSuccess(true)
       setFlipX(1)
       setWorkerAngle(0)
@@ -138,7 +142,7 @@ export default function NailPaintingAnim({
     return () => {
       cancelled = true
     }
-  }, [active, normalizedPoints, onComplete])
+  }, [active, normalizedPoints, onComplete, onPhaseChange])
 
   const isMoving = phase === 'move' || phase === 'return'
 
@@ -213,40 +217,6 @@ export default function NailPaintingAnim({
           }}
         />
       </div>
-
-      <div
-        style={{
-          position: 'absolute',
-          left: 0,
-          right: 0,
-          bottom: 12,
-          display: 'flex',
-          justifyContent: 'center',
-          zIndex: 17,
-        }}
-      >
-        <div
-          style={{
-            padding: '6px 10px',
-            borderRadius: 999,
-            background: 'rgba(255,255,255,0.88)',
-            color: '#6B4B83',
-            fontSize: 11,
-            lineHeight: '14px',
-            fontWeight: 600,
-            boxShadow: '0 8px 18px rgba(0,0,0,0.08)',
-          }}
-        >
-          {phase === 'done'
-            ? '施工完成，正在贴上成功贴纸'
-            : phase === 'return'
-              ? '绘制完毕，正在逐个封层加固'
-              : phase === 'move'
-              ? `前往第 ${Math.min(currentIndex + 2, normalizedPoints.length)} 个检测点`
-              : '施工中，请耐心等待效果...'}
-        </div>
-      </div>
-
     </div>
   )
 }

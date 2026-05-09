@@ -111,13 +111,23 @@ async function loadPostPools() {
   }
 }
 
-async function loadFakeNailPosts() {
-  try {
-    const r = await fetch('/api/fake-nail-posts?t=' + Date.now())
-    return await r.json()
-  } catch {
-    return []
-  }
+function loadFakeNailPosts() {
+  return [
+    { author: '美甲素材库', likes: 317, images: ['/posts/fake-nail/美甲-1-1.jpg'] },
+    { author: '美甲素材库', likes: 334, images: ['/posts/fake-nail/美甲-2-1.jpg', '/posts/fake-nail/美甲-2-2.jpg', '/posts/fake-nail/美甲-2-3.jpg'] },
+    { author: '美甲素材库', likes: 351, images: ['/posts/fake-nail/美甲-3-1.jpg', '/posts/fake-nail/美甲-3-2.jpg', '/posts/fake-nail/美甲-3-3.jpg'] },
+    { author: '美甲素材库', likes: 368, images: ['/posts/fake-nail/美甲-4-1.jpg', '/posts/fake-nail/美甲-4-2.jpg'] },
+    { author: '美甲素材库', likes: 385, images: ['/posts/fake-nail/美甲-5-1.jpg', '/posts/fake-nail/美甲-5-2.jpg', '/posts/fake-nail/美甲-5-3.jpg'] },
+    { author: '美甲素材库', likes: 402, images: ['/posts/fake-nail/美甲-6-1.jpg', '/posts/fake-nail/美甲-6-2.jpg'] },
+    { author: '美甲素材库', likes: 419, images: ['/posts/fake-nail/美甲-7-1.jpg'] },
+    { author: '美甲素材库', likes: 436, images: ['/posts/fake-nail/美甲-8-1.jpg', '/posts/fake-nail/美甲-8-2.jpg'] },
+    { author: '美甲素材库', likes: 453, images: ['/posts/fake-nail/美甲-9-1.jpg', '/posts/fake-nail/美甲-9-2.jpg'] },
+    { author: '美甲素材库', likes: 470, images: ['/posts/fake-nail/美甲-10-1.jpg', '/posts/fake-nail/美甲-10-2.jpg'] },
+    { author: '美甲素材库', likes: 487, images: ['/posts/fake-nail/美甲-11-1.jpg', '/posts/fake-nail/美甲-11-2.jpg', '/posts/fake-nail/美甲-11-3.jpg'] },
+    { author: '美甲素材库', likes: 504, images: ['/posts/fake-nail/美甲-12-1.jpg', '/posts/fake-nail/美甲-12-2.jpg'] },
+    { author: '美甲素材库', likes: 521, images: ['/posts/fake-nail/美甲-13-1.jpg', '/posts/fake-nail/美甲-13-2.jpg', '/posts/fake-nail/美甲-13-3.jpg'] },
+    { author: '美甲素材库', likes: 538, images: ['/posts/fake-nail/美甲-14-1.jpg'] },
+  ]
 }
 
 function mapPostsFromSource(items, type) {
@@ -214,7 +224,7 @@ export default function Feed({ onPost, onAIChat }) {
   const [activeTab, setActiveTab] = useState('discover')
   const [activeSubTab, setActiveSubTab] = useState('nail')
   const [poolMap, setPoolMap] = useState(null)
-  const [fakeNailPosts, setFakeNailPosts] = useState([])
+  const [fakeNailPosts, setFakeNailPosts] = useState(() => loadFakeNailPosts())
   const [posts, setPosts] = useState([])
   const [loading, setLoading] = useState(false)
   const sentinelRef = useRef(null)
@@ -225,9 +235,8 @@ export default function Feed({ onPost, onAIChat }) {
     : posts
 
   useEffect(() => {
-    Promise.all([loadPostPools(), loadFakeNailPosts()]).then(([pm, nailPm]) => {
+    loadPostPools().then(pm => {
       if (pm) setPoolMap(pm)
-      if (Array.isArray(nailPm)) setFakeNailPosts(nailPm)
     })
   }, [])
 

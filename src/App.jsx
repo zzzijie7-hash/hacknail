@@ -29,6 +29,14 @@ export default function App() {
 
   let currentPage = null
 
+  const resetSmartWearState = () => {
+    setNailStyle(null)
+    setHandFile(null)
+    setResult(null)
+    setLoading(false)
+    setProgress(0)
+  }
+
   // provider 切换时同步到后端
   const changeProvider = (p) => {
     setProvider(p)
@@ -44,7 +52,10 @@ export default function App() {
   if (page === 'aichat') {
     currentPage = <AIChat
       onBack={() => setPage('feed')}
-      onTryOn={() => setPage('smartwear')}
+      onTryOn={() => {
+        resetSmartWearState()
+        setPage('smartwear')
+      }}
     />
   }
 
@@ -54,6 +65,7 @@ export default function App() {
       post={postData}
       onBack={() => setPage('feed')}
       onTryOn={(post) => {
+        resetSmartWearState()
         setPostData(post)
         setPage('smartwear')
       }}

@@ -18,6 +18,15 @@ const MOCK_NAIL_POINTS = [
   { x: 0.63, y: 0.55 },
   { x: 0.76, y: 0.68 },
 ]
+const DEMO_BEFORE_IMAGE = '/mock-demo/nail2.png'
+const DEMO_AFTER_IMAGE = '/mock-demo/result_grok3.png'
+const DEMO_NAIL_POINTS = [
+  { x: 0.2, y: 0.78 },
+  { x: 0.35, y: 0.57 },
+  { x: 0.49, y: 0.48 },
+  { x: 0.64, y: 0.56 },
+  { x: 0.79, y: 0.74 },
+]
 
 const BUBBLE_TYPING_MS = 32
 const DETECTING_DOTS = [
@@ -117,6 +126,8 @@ export default function SmartWear({
   const [detectProgress, setDetectProgress] = useState(0)
   const [handOutline, setHandOutline] = useState([])
   const [resultNotice, setResultNotice] = useState('')
+  const [demoPreviewActive, setDemoPreviewActive] = useState(false)
+  const [paintingPhase, setPaintingPhase] = useState('idle')
   const inputRef = useRef()
   const cameraRef = useRef()
   const cameraPreviewRef = useRef(null)
@@ -372,50 +383,50 @@ export default function SmartWear({
   }
 
   const mockGenerate = async (notice = '模拟生成效果') => {
-    if (!handFile || !curNail) return
-    if (!handPreviewUrlRef.current && !hpUrl) {
-      try {
-        const preview = await readFileAsDataUrl(handFile)
-        handPreviewUrlRef.current = preview
-        setHpUrl(preview)
-      } catch (e) {
-        console.warn('[mockGenerate preview rebuild failed]', e)
-      }
-    }
+    handPreviewUrlRef.current = DEMO_BEFORE_IMAGE
+    setHpUrl(DEMO_BEFORE_IMAGE)
+    setDemoPreviewActive(true)
+    setNailPoints(DEMO_NAIL_POINTS)
+    setHandOutline([])
+    setAnalyzeState('detected')
+    setDetectProgress(100)
+    setPaintingPhase('work')
     onLoadingChange?.(true); setError(null); setResultNotice(notice); onResultChange?.(null); onProgressChange?.(0); setMode('generating')
-    let pg = 0
-    const iv = setInterval(() => { pg = Math.min(pg + Math.random() * 20, 90); onProgressChange?.(pg) }, 600)
-    const hp = handPreviewUrlRef.current || hpUrl
-    const nSrc = curNail.src
-    const canvas = document.createElement('canvas')
-    canvas.width = 400; canvas.height = 500
-    const ctx = canvas.getContext('2d')
-    const handImg = new Image()
-    handImg.src = hp
-    handImg.onload = () => {
-      ctx.drawImage(handImg, 0, 0, 400, 500)
-      const nailImg = new Image()
-      nailImg.crossOrigin = 'anonymous'
-      nailImg.src = nSrc
-      nailImg.onload = () => {
-        ctx.globalAlpha = 0.75
-        ctx.drawImage(nailImg, 260, 30, 120, 120)
-        clearInterval(iv)
-        onProgressChange?.(100)
-        onResultChange?.(canvas.toDataURL())
-        onLoadingChange?.(false)
-      }
-      nailImg.onerror = () => {
-        clearInterval(iv)
-        onProgressChange?.(100)
-        onResultChange?.(canvas.toDataURL())
-        onLoadingChange?.(false)
-      }
+
+    let pg = 14
+    onProgressChange?.(pg)
+    const iv = window.setInterval(() => {
+      const maxDuringPainting = paintingPhase === 'return' ? 97 : 88
+      pg = Math.min(pg + Math.random() * 8 + 5, maxDuringPainting)
+      onProgressChange?.(pg)
+    }, 700)
+
+    const finishTimer = window.setTimeout(() => {
+      window.clearInterval(iv)
+      onProgressChange?.(100)
+      setPaintingPhase('done')
+      onResultChange?.(DEMO_AFTER_IMAGE)
+      onLoadingChange?.(false)
+    }, 15000)
+
+    return () => {
+      window.clearInterval(iv)
+      window.clearTimeout(finishTimer)
     }
-    handImg.onerror = () => { clearInterval(iv); setError('图片加载失败'); onLoadingChange?.(false) }
   }
 
-  const reset = () => { onResultChange?.(null); onHandFileChange?.(null); onProgressChange?.(0); setError(null); setMode('capture') }
+  const reset = () => {
+    onResultChange?.(null)
+    onHandFileChange?.(null)
+    onProgressChange?.(0)
+    setError(null)
+    setResultNotice('')
+    setDemoPreviewActive(false)
+    setPaintingPhase('idle')
+    setHpUrl(null)
+    handPreviewUrlRef.current = null
+    setMode('capture')
+  }
 
   const handleShapeSelect = (shape) => {
     if (shape === selectedShape) return
@@ -425,7 +436,7 @@ export default function SmartWear({
     }
   }
 
-  const SimulateButton = mode === 'confirm' ? (
+  const SimulateButton = (mode === 'capture' || mode === 'confirm') ? (
     <button
       onClick={() => mockGenerate('模拟生成效果')}
       style={{
@@ -567,8 +578,10 @@ export default function SmartWear({
       <div style={{ paddingTop: 14, textAlign: 'center' }}>
         <span style={{ fontSize: 10, fontWeight: 500, color: 'rgba(255,255,255,0.5)', lineHeight: '14px' }}>
           {analyzeState === 'loading'
-            ? `正在为您检测指甲位置，进度${Math.round(detectProgress)}%`
-            : `正在为您绘制美甲款式，进度${Math.round(progress || 0)}%`}
+            ? `正在识别指节位置，进度${Math.round(detectProgress)}%`
+            : paintingPhase === 'return' || progress >= 92
+              ? '绘制完毕，正在为您做最后的封层，请耐心等待'
+              : `识别完毕，正在逐步为你绘制，还剩${Math.max(1, Math.round((100 - (progress || 0)) / 10))} s`}
         </span>
       </div>
     </div>
@@ -613,8 +626,6 @@ export default function SmartWear({
         <div style={{ position: 'absolute', inset: 0, borderRadius: '50%', border: '2px solid rgba(241,234,255,0.16)' }} />
         <div style={{ position: 'absolute', inset: 0, borderRadius: '50%', border: '2px solid transparent', borderTopColor: '#A062C9', animation: 'detectSpin 1s linear infinite' }} />
       </div>
-      <div style={{ fontSize: 12, fontWeight: 500, color: 'rgba(255,255,255,0.88)', lineHeight: '16px' }}>手部细节检测中</div>
-      <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.55)', lineHeight: '14px' }}>检测完成后会开始逐指施工</div>
       <style>{`
         @keyframes detectSpin {
           to { transform: rotate(360deg); }
@@ -637,7 +648,7 @@ export default function SmartWear({
           <>
             <HeroSection />
             <div style={{ height: 18, flexShrink: 0 }} />
-            <Viewfinder>{hpUrl ? <img src={hpUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : (cameraState === 'idle' || cameraState === 'loading' || cameraState === 'ready' || cameraState === 'denied' ? LiveCameraView : EmptyViewfinder)}</Viewfinder>
+            <Viewfinder>{hpUrl ? <img src={hpUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : (cameraState === 'idle' || cameraState === 'loading' || cameraState === 'ready' || cameraState === 'denied' ? LiveCameraView : EmptyViewfinder)}{SimulateButton}</Viewfinder>
             <div style={{ height: 18, flexShrink: 0 }} />
             <BottomBar centerAction={() => { cameraRef.current.click(); if (hpUrl) setMode('confirm') }} />
             {BottomSpacer}
@@ -649,7 +660,7 @@ export default function SmartWear({
           <>
             <HeroSection />
             <div style={{ height: 18, flexShrink: 0 }} />
-            <Viewfinder>{hpUrl && <img src={hpUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}{SimulateButton}<button onClick={() => { onHandFileChange?.(null); setMode('capture') }} style={{ position: 'absolute', top: 10, right: 10, width: 24, height: 24, borderRadius: '50%', background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', zIndex: 25 }}><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 2L12 12M12 2L2 12" stroke="white" strokeWidth="2" strokeLinecap="round"/></svg></button></Viewfinder>
+            <Viewfinder>{hpUrl && <img src={hpUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}{SimulateButton}<button onClick={() => { onHandFileChange?.(null); setMode('capture'); if (demoPreviewActive) { setHpUrl(null); handPreviewUrlRef.current = null; setDemoPreviewActive(false) } }} style={{ position: 'absolute', top: 10, right: 10, width: 24, height: 24, borderRadius: '50%', background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', zIndex: 25 }}><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 2L12 12M12 2L2 12" stroke="white" strokeWidth="2" strokeLinecap="round"/></svg></button></Viewfinder>
             <div style={{ height: 18, flexShrink: 0 }} />
             <BottomBar centerAction={startGenerate} centerIcon="/icons/btn-confirm.png" />
             {BottomSpacer}
@@ -672,7 +683,7 @@ export default function SmartWear({
                 <div style={{ position: 'absolute', inset: 0, background: '#161616' }} />
               )}
               {analyzeState === 'detected' || analyzeState === 'fallback'
-                ? <NailPaintingAnim points={nailPoints} active={mode === 'generating'} workerSrc="/icons/worker-potato.png" showDebugPoints={analyzeState === 'detected'} />
+                ? <NailPaintingAnim points={nailPoints} active={mode === 'generating'} workerSrc="/icons/worker-potato.png" showDebugPoints={analyzeState === 'detected'} onPhaseChange={setPaintingPhase} />
                 : null}
               {DetectingOverlay}
             </Viewfinder>
