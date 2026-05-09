@@ -13,6 +13,7 @@ app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], all
 
 # ── 图片存储配置 ──────────────────────────────────────
 PUBLIC = pathlib.Path(__file__).resolve().parent.parent / "public" / "posts"
+FAKE_NAIL_PUBLIC = PUBLIC / "fake-nail"
 CAT_MAP = {"nail": "nail", "pet": "pet", "rental": "rental", "portrait": "portrait"}
 CAT_LABEL = {"nail": "美甲", "pet": "宠物穿搭", "rental": "租房户型", "portrait": "写真摄影"}
 ALLOWED_EXT = {".jpg", ".jpeg", ".png", ".webp", ".gif", ".bmp"}
@@ -38,6 +39,35 @@ def _save_manifest(m):
 @app.get("/api/manifest")
 async def get_manifest():
     return _load_manifest()
+
+
+@app.get("/api/fake-nail-posts")
+async def get_fake_nail_posts():
+    if not FAKE_NAIL_PUBLIC.exists():
+        return []
+
+    groups = {}
+    pattern = re.compile(r"^美甲-(\d+)-(\d+)\.(jpg|jpeg|png|webp)$", re.IGNORECASE)
+    for f in sorted(FAKE_NAIL_PUBLIC.iterdir()):
+        if not f.is_file():
+            continue
+        match = pattern.match(f.name)
+        if not match:
+            continue
+        group_id = int(match.group(1))
+        image_order = int(match.group(2))
+        groups.setdefault(group_id, []).append((image_order, f"/posts/fake-nail/{f.name}"))
+
+    items = []
+    for group_id in sorted(groups.keys()):
+        images = [src for _, src in sorted(groups[group_id], key=lambda item: item[0])]
+        items.append({
+            "title": f"美甲灵感 #{group_id}",
+            "author": "美甲素材库",
+            "likes": 300 + group_id * 17,
+            "images": images,
+        })
+    return items
 
 class UploadMeta(BaseModel):
     category: str  # nail / pet / rental / portrait
@@ -141,7 +171,8 @@ async def get_provider():
 # ── Cyber Nails ────────────────────────────────────────
 @app.post("/api/cyber-nails")
 async def cyber_nails(hand: UploadFile = File(...), nail: UploadFile = File(None),
-                      nail_url: str = Form(None), nail_shape: str = Form("squoval")):
+                      nail_url: str = Form(None), nail_shape: str = Form("squoval"),
+                      provider: str = Form("openai")):
     hand_data = await hand.read()
     if nail and nail.filename:
         nail_data = await nail.read()
@@ -185,14 +216,24 @@ async def cyber_nails(hand: UploadFile = File(...), nail: UploadFile = File(None
         "Make nails look like a real photograph with natural perspective and shading."
     )
 
-    if _current_provider == "openai":
+    requested_provider = provider if provider in ("openai", "grok") else _current_provider
+
+    if requested_provider == "openai":
         try:
             return await _openai_masked_edits(hand_compressed, nail_compressed, prompt)
         except Exception as e:
             print(f"[OpenAI failed, fallback]: {e}")
-            return await _grok_masked_gen(hand_compressed, nail_compressed, prompt)
+            try:
+                return await _grok_masked_gen(hand_compressed, nail_compressed, prompt)
+            except Exception as fallback_error:
+                print(f"[Grok failed after OpenAI]: {fallback_error}")
+                raise HTTPException(429, "后端模型token用尽")
     else:
-        return await _grok_masked_gen(hand_compressed, nail_compressed, prompt)
+        try:
+            return await _grok_masked_gen(hand_compressed, nail_compressed, prompt)
+        except Exception as e:
+            print(f"[Grok failed]: {e}")
+            raise HTTPException(429, "后端模型token用尽")
 
 
 async def _analyze_nail_style(nail_data):
@@ -329,7 +370,7 @@ async def analyze_hand(hand: UploadFile = File(...)):
     img = Image.open(io.BytesIO(hand_data)).convert("RGB")
     w, h = img.size
 
-    _, nail_info = detect_nail_masks(hand_data)
+    _, nail_info, hand_outline = detect_nail_masks(hand_data)
 
     # 归一化指甲中心坐标 (0~1)
     nails = []
@@ -341,11 +382,19 @@ async def analyze_hand(hand: UploadFile = File(...)):
             "y": round(cy / h, 4),
         })
 
+    outline = []
+    for ox, oy in hand_outline:
+        outline.append({
+            "x": round(ox / w, 4),
+            "y": round(oy / h, 4),
+        })
+
     # 肤色采样：从手部中心区域采样
     skin_analysis = _analyze_skin_tone(np.array(img), nail_info, w, h)
 
     return JSONResponse({
         "nails": nails,
+        "hand_outline": outline,
         "hand_size": {"width": w, "height": h},
         **skin_analysis,
     })

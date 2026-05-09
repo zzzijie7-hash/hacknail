@@ -66,10 +66,10 @@ export default function Chat({ onBack, shop, nailData, onSmartWear }) {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center"
-      style={{ fontFamily: "'PingFang SC', -apple-system, sans-serif", background: '#FAFAFA' }}>
+    <div className="flex flex-col items-center"
+      style={{ fontFamily: "'PingFang SC', -apple-system, sans-serif", background: '#FAFAFA', minHeight: '100%', height: '100%' }}>
 
-      <div className="w-full bg-white flex flex-col" style={{ maxWidth: 375, height: '100vh' }}>
+      <div className="w-full bg-white flex flex-col" style={{ maxWidth: 375, minHeight: '100%', height: '100%' }}>
 
         {/* ── 顶栏 ── */}
         <div className="flex items-center h-[44px] px-[12px] gap-[10px] border-b border-[#F5F5F5] shrink-0">

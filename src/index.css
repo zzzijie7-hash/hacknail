@@ -12,7 +12,9 @@ html {
 
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  background: #FAFAFA;
+  background:
+    radial-gradient(circle at top, rgba(255,255,255,0.06), transparent 30%),
+    linear-gradient(180deg, #111 0%, #050505 100%);
   color: #222;
   min-height: 100vh;
   -webkit-overflow-scrolling: touch;
@@ -21,4 +23,16 @@ body {
   -webkit-tap-highlight-color: transparent;
   -webkit-user-select: none;
   user-select: none;
+  display: flex;
+  justify-content: center;
+  overflow: hidden;
+}
+
+#root {
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 24px;
 }

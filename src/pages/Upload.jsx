@@ -46,7 +46,7 @@ export default function UploadPage({ onBack }) {
   useEffect(() => { return () => previews.forEach(u => URL.revokeObjectURL(u)) }, [files])
 
   return (
-    <div style={{ minHeight:'100vh', background:'#FAFAFA', fontFamily:'PingFang SC, sans-serif', display:'flex', flexDirection:'column', alignItems:'center' }}>
+    <div style={{ minHeight:'100%', height:'100%', background:'#FAFAFA', fontFamily:'PingFang SC, sans-serif', display:'flex', flexDirection:'column', alignItems:'center' }}>
       <div style={{ width:'100%', maxWidth:600, padding:24 }}>
         <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:24 }}>
           <button onClick={() => { window.dispatchEvent(new Event('feed:refresh')); onBack() }} style={{ border:'none', background:'none', cursor:'pointer', fontSize:16 }}>← 返回</button>

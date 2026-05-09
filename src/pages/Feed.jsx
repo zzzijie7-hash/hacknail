@@ -111,6 +111,42 @@ async function loadPostPools() {
   }
 }
 
+async function loadFakeNailPosts() {
+  try {
+    const r = await fetch('/api/fake-nail-posts?t=' + Date.now())
+    return await r.json()
+  } catch {
+    return []
+  }
+}
+
+function mapPostsFromSource(items, type) {
+  return (items || []).map((p, index) => {
+    let title = p.title
+    let content = p.title
+    if (type === 'nail') {
+      title = NAIL_TITLES[index % NAIL_TITLES.length]
+      content = NAIL_CONTENTS[index % NAIL_CONTENTS.length]
+    } else if (type === 'pet') {
+      title = PET_TITLES[index % PET_TITLES.length]
+    } else if (type === 'rental') {
+      title = RENTAL_TITLES[index % RENTAL_TITLES.length]
+    } else if (type === 'portrait') {
+      title = PORTRAIT_TITLES[index % PORTRAIT_TITLES.length]
+    }
+    return {
+      id: `${type}-${index}-${p.images?.[0] || p.title}`,
+      title,
+      author: p.author,
+      likes: p.likes + Math.floor(Math.random() * 20),
+      images: p.images || [],
+      content,
+      tags: [TAG_MAP[type] || `#${type}`],
+      type,
+    }
+  })
+}
+
 function generatePosts(count, poolMap) {
   const categories = Object.keys(poolMap).filter(k => poolMap[k]?.length > 0)
   if (!categories.length) return []
@@ -165,6 +201,7 @@ const TABS = [
 // 次级导航标签
 const SUB_TABS = [
   { key: 'recommend', label: '推荐' },
+  { key: 'nail', label: '美甲' },
   { key: 'live', label: '直播' },
   { key: 'drama', label: '短剧' },
   { key: 'wear', label: '穿搭' },
@@ -173,48 +210,67 @@ const SUB_TABS = [
   { key: 'anime2', label: '动漫' },
 ]
 
-export default function Feed({ onPost, onAIChat, onUpload }) {
+export default function Feed({ onPost, onAIChat }) {
   const [activeTab, setActiveTab] = useState('discover')
-  const [activeSubTab, setActiveSubTab] = useState('recommend')
+  const [activeSubTab, setActiveSubTab] = useState('nail')
   const [poolMap, setPoolMap] = useState(null)
+  const [fakeNailPosts, setFakeNailPosts] = useState([])
   const [posts, setPosts] = useState([])
   const [loading, setLoading] = useState(false)
   const sentinelRef = useRef(null)
+  const scrollRef = useRef(null)
+
+  const displayedPosts = activeSubTab === 'nail'
+    ? posts.filter(post => post.type === 'nail')
+    : posts
 
   useEffect(() => {
-    loadPostPools().then(pm => {
-      if (pm) {
-        setPoolMap(pm)
-        setPosts(generatePosts(20, pm))
-      }
+    Promise.all([loadPostPools(), loadFakeNailPosts()]).then(([pm, nailPm]) => {
+      if (pm) setPoolMap(pm)
+      if (Array.isArray(nailPm)) setFakeNailPosts(nailPm)
     })
   }, [])
 
+  useEffect(() => {
+    if (activeSubTab === 'nail') {
+      if (fakeNailPosts.length) {
+        setPosts(mapPostsFromSource(fakeNailPosts, 'nail'))
+      }
+      return
+    }
+    if (poolMap) {
+      setPosts(generatePosts(20, poolMap))
+    }
+  }, [activeSubTab, poolMap, fakeNailPosts])
+
   const loadMore = useCallback(() => {
-    if (loading || !poolMap) return
+    if (activeSubTab === 'nail') return
+    const currentPool = activeSubTab === 'nail' ? { nail: fakeNailPosts } : poolMap
+    if (loading || !currentPool || (activeSubTab === 'nail' && !fakeNailPosts.length)) return
     setLoading(true)
     setTimeout(() => {
-      setPosts(prev => [...prev, ...generatePosts(10, poolMap)])
+      setPosts(prev => [...prev, ...generatePosts(10, currentPool)])
       setLoading(false)
     }, 300)
-  }, [loading, poolMap])
+  }, [activeSubTab, fakeNailPosts, loading, poolMap])
 
   useEffect(() => {
     const el = sentinelRef.current
     if (!el) return
+    const root = scrollRef.current
     const observer = new IntersectionObserver(
       entries => { if (entries[0].isIntersecting) loadMore() },
-      { rootMargin: '200px' }
+      { root, rootMargin: '200px' }
     )
     observer.observe(el)
     return () => observer.disconnect()
   }, [loadMore])
 
   return (
-    <div className="min-h-screen flex flex-col items-center"
-      style={{ fontFamily: "'PingFang SC', -apple-system, 'SF Pro', sans-serif", background: Colors.pageBg }}>
+    <div className="flex flex-col items-center"
+      style={{ fontFamily: "'PingFang SC', -apple-system, 'SF Pro', sans-serif", background: Colors.pageBg, minHeight: '100%', height: '100%' }}>
 
-      <div className="w-full bg-white flex flex-col items-center" style={{ maxWidth: 375 }}>
+      <div className="w-full bg-white flex flex-col items-center" style={{ maxWidth: 375, minHeight: '100%', height: '100%', position: 'relative', overflow: 'hidden' }}>
 
         {/* ── SystemBar 系统状态栏 ── */}
         <div className="w-full flex items-center justify-start px-[16px] h-[44px]" style={{ maxWidth: 375 }}>
@@ -258,108 +314,97 @@ export default function Feed({ onPost, onAIChat, onUpload }) {
             <img src="/icons/search.svg" alt="search" style={{ width: 48, height: 44, marginRight: -8 }} />
           </button>
         </div>
-      </div>
 
-      {/* ── 次级导航栏 (Figma: 375x40, tabs 52x40, padding 12/8) ── */}
-      <div className="w-full bg-white relative overflow-hidden" style={{ maxWidth: 375, height: 40 }}>
-        {/* 可滚动 tab 列表 */}
-        <div className="flex items-center h-full overflow-x-auto" style={{ scrollbarWidth: 'none', paddingRight: 60 }}>
-          {SUB_TABS.map(st => {
-            const isActive = activeSubTab === st.key
-            return (
-              <button key={st.key} onClick={() => setActiveSubTab(st.key)}
-                className="shrink-0 flex items-center justify-center"
-                style={{ height: 40, padding: '8px 12px', minWidth: 52 }}>
-                <span style={{
-                  fontSize: 14, fontWeight: isActive ? 500 : 400,
-                  color: isActive ? 'rgba(0,0,0,0.8)' : 'rgba(0,0,0,0.45)',
-                  lineHeight: '20px',
-                }}>
-                  {st.label}
-                </span>
-              </button>
-            )
-          })}
+        {/* ── 次级导航栏 (Figma: 375x40, tabs 52x40, padding 12/8) ── */}
+        <div className="w-full bg-white relative overflow-hidden shrink-0" style={{ maxWidth: 375, height: 40 }}>
+          {/* 可滚动 tab 列表 */}
+          <div className="flex items-center h-full overflow-x-auto" style={{ scrollbarWidth: 'none', paddingRight: 60 }}>
+            {SUB_TABS.map(st => {
+              const isActive = activeSubTab === st.key
+              return (
+                <button key={st.key} onClick={() => setActiveSubTab(st.key)}
+                  className="shrink-0 flex items-center justify-center"
+                  style={{ height: 40, padding: '8px 12px', minWidth: 52 }}>
+                  <span style={{
+                    fontSize: 14, fontWeight: isActive ? 500 : 400,
+                    color: isActive ? 'rgba(0,0,0,0.8)' : 'rgba(0,0,0,0.45)',
+                    lineHeight: '20px',
+                  }}>
+                    {st.label}
+                  </span>
+                </button>
+              )
+            })}
+          </div>
+
+          {/* 右边：渐变遮罩 + 白色实心 + 展开箭头 */}
+          <div className="absolute right-0 top-0 flex items-center pointer-events-none" style={{ height: 40 }}>
+            <div style={{
+              width: 34, height: 40,
+              background: 'linear-gradient(to right, rgba(255,255,255,0), rgba(255,255,255,1))',
+            }} />
+            <div style={{ width: 28, height: 40, background: '#fff' }} />
+          </div>
+          <button className="absolute right-0 top-0 flex items-center justify-center"
+            style={{ width: 28, height: 40 }}>
+            <img src="/icons/expand-tab.svg" alt="展开" style={{ width: 16, height: 16 }} />
+          </button>
         </div>
 
-        {/* 右边：渐变遮罩 + 白色实心 + 展开箭头 */}
-        <div className="absolute right-0 top-0 flex items-center pointer-events-none" style={{ height: 40 }}>
-          <div style={{
-            width: 34, height: 40,
-            background: 'linear-gradient(to right, rgba(255,255,255,0), rgba(255,255,255,1))',
-          }} />
-          <div style={{ width: 28, height: 40, background: '#fff' }} />
-        </div>
-        <button className="absolute right-0 top-0 flex items-center justify-center"
-          style={{ width: 28, height: 40 }}>
-          <img src="/icons/expand-tab.svg" alt="展开" style={{ width: 16, height: 16 }} />
-        </button>
-      </div>
+        {/* ── 可滚动主内容区 ── */}
+        <div
+          ref={scrollRef}
+          className="w-full flex-1 overflow-y-auto"
+          style={{ maxWidth: 375, background: Colors.pageBg, minHeight: 0 }}
+        >
+          <div className="w-full flex flex-col items-center" style={{ maxWidth: 375, background: Colors.pageBg }}>
+            <div style={{ padding: `5px 5px 90px` }}>
+              <div style={{ display: 'flex', gap: 5 }}>
+                {/* 左列 */}
+                <div style={{ width: 180, display: 'flex', flexDirection: 'column', gap: 5 }}>
+                  {displayedPosts.filter((_, i) => i % 2 === 0).map(post => (
+                    <PostCard key={post.id} post={post} onPost={onPost} />
+                  ))}
+                </div>
+                {/* 右列 */}
+                <div style={{ width: 180, display: 'flex', flexDirection: 'column', gap: 5 }}>
+                  {displayedPosts.filter((_, i) => i % 2 === 1).map(post => (
+                    <PostCard key={post.id} post={post} onPost={onPost} />
+                  ))}
+                </div>
+              </div>
 
-      {/* ── 瀑布流内容区 ── */}
-      <div className="w-full flex flex-col items-center" style={{ maxWidth: 375, background: Colors.pageBg }}>
-        <div style={{ padding: `5px 5px 90px` }}>
-          <div style={{ display: 'flex', gap: 5 }}>
-            {/* 左列 */}
-            <div style={{ width: 180, display: 'flex', flexDirection: 'column', gap: 5 }}>
-              {posts.filter((_, i) => i % 2 === 0).map(post => (
-                <PostCard key={post.id} post={post} onPost={onPost} />
-              ))}
+              {/* 哨兵 */}
+              <div ref={sentinelRef} className="py-4 flex justify-center">
+                {loading && (
+                  <svg className="animate-spin h-5 w-5 text-[#FF2442]" viewBox="0 0 24 24" fill="none">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                  </svg>
+                )}
+              </div>
             </div>
-            {/* 右列 */}
-            <div style={{ width: 180, display: 'flex', flexDirection: 'column', gap: 5 }}>
-              {posts.filter((_, i) => i % 2 === 1).map(post => (
-                <PostCard key={post.id} post={post} onPost={onPost} />
-              ))}
+          </div>
+        </div>
+
+        {/* ── 底部导航栏 ── */}
+        <div className="absolute left-0 right-0 bg-white border-t border-[#eee] z-10 flex flex-col items-center"
+          style={{ bottom: 32 }}>
+          <div className="flex items-center justify-around w-full h-[50px] px-[10px]">
+            <span style={{ fontSize: Type.tab.size, fontWeight: Type.tab.weight, color: '#222' }}>首页</span>
+            <span style={{ fontSize: Type.tab.size, fontWeight: 400, color: Colors.textHint }}>购物</span>
+            <div className="flex items-center justify-center">
+              <img src="/发布.png" alt="publish" className="h-[30px] w-auto" />
             </div>
-          </div>
-
-          {/* 哨兵 */}
-          <div ref={sentinelRef} className="py-4 flex justify-center">
-            {loading && (
-              <svg className="animate-spin h-5 w-5 text-[#FF2442]" viewBox="0 0 24 24" fill="none">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-              </svg>
-            )}
+            <span style={{ fontSize: Type.tab.size, fontWeight: 400, color: Colors.textHint }}>消息</span>
+            <span style={{ fontSize: Type.tab.size, fontWeight: 400, color: Colors.textHint }}>我</span>
           </div>
         </div>
+
+        {/* 底部白条 32px */}
+        <div className="absolute bottom-0 left-0 right-0 bg-white z-10" style={{ height: 32 }} />
+
       </div>
-
-      {/* ── 底部导航栏 ── */}
-      <div className="fixed left-1/2 -translate-x-1/2 w-full bg-white border-t border-[#eee] z-10 flex flex-col items-center"
-        style={{ maxWidth: 375, bottom: 32 }}>
-        <div className="flex items-center justify-around w-full h-[50px] px-[10px]">
-          <span style={{ fontSize: Type.tab.size, fontWeight: Type.tab.weight, color: '#222' }}>首页</span>
-          <span style={{ fontSize: Type.tab.size, fontWeight: 400, color: Colors.textHint }}>购物</span>
-          <div className="flex items-center justify-center">
-            <img src="/发布.png" alt="publish" className="h-[30px] w-auto" />
-          </div>
-          <span style={{ fontSize: Type.tab.size, fontWeight: 400, color: Colors.textHint }}>消息</span>
-          <span style={{ fontSize: Type.tab.size, fontWeight: 400, color: Colors.textHint }}>我</span>
-        </div>
-      </div>
-
-      {/* 底部白条 32px */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white z-10" style={{ height: 32 }} />
-
-      {/* ── 浮动上传入口 ── */}
-      <button onClick={onUpload}
-        style={{
-          position: 'fixed', top: '50%', zIndex: 40,
-          width: 28, height: 48,
-          left: 'calc(50% + 187.5px)',
-          background: 'rgba(255,255,255,0.9)',
-          borderTopLeftRadius: 8, borderBottomLeftRadius: 8,
-          border: '1px solid #e0e0e0', borderRight: 'none',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          cursor: 'pointer',
-          transform: 'translateY(-50%)',
-          boxShadow: '0 1px 8px rgba(0,0,0,0.06)',
-        }}
-        title="素材上传">
-        <span style={{ fontSize: 18, color: 'rgba(0,0,0,0.4)', lineHeight: '18px' }}>+</span>
-      </button>
     </div>
   )
 }

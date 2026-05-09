@@ -8,6 +8,7 @@ export default function ProductDetail({ onBack, product, nailStyle }) {
 
   const p = product || products[0]
   const similar = products.filter(x => x.id !== p.id).slice(0, 6)
+  const lookImages = [p.image, similar[0]?.image || products[1]?.image, similar[1]?.image || products[2]?.image]
 
   return (
     <PageLayout bg="rgb(245,245,245)" innerBg="rgb(245,245,245)">
@@ -93,10 +94,10 @@ export default function ProductDetail({ onBack, product, nailStyle }) {
       <div className="bg-white mx-[12px] mt-[4px] rounded-[8px] px-[16px] py-[12px]">
         <p className="text-[rgba(0,0,0,0.8)] text-[14px] font-semibold mb-[8px]">穿搭精选</p>
         <div className="flex gap-[8px] overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
-          {[1, 2, 3].map(i => (
-            <div key={i} className="shrink-0 w-[120px]">
+          {lookImages.map((image, index) => (
+            <div key={`${image}-${index}`} className="shrink-0 w-[120px]">
               <div className="w-[120px] h-[160px] rounded-[8px] bg-[#f5f5f5] overflow-hidden">
-                <img src={`https://picsum.photos/seed/look${i}/240/320`} alt="look" className="w-full h-full object-cover" />
+                <img src={image} alt="look" className="w-full h-full object-cover" />
               </div>
               <p className="text-[rgba(0,0,0,0.6)] text-[11px] mt-[4px] line-clamp-2">超显白的穿戴甲搭配分享~</p>
               <div className="flex items-center gap-[4px] mt-[2px]">

@@ -73,10 +73,10 @@ export default function AIChat({ onBack, onTryOn }) {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center"
-      style={{ fontFamily: "'PingFang SC', -apple-system, 'SF Pro', sans-serif", background: '#fff' }}>
+    <div className="flex flex-col items-center"
+      style={{ fontFamily: "'PingFang SC', -apple-system, 'SF Pro', sans-serif", background: '#fff', minHeight: '100%', height: '100%' }}>
 
-      <div className="w-full flex flex-col relative" style={{ maxWidth: 375, height: '100vh' }}>
+      <div className="w-full flex flex-col relative" style={{ maxWidth: 375, minHeight: '100%', height: '100%' }}>
 
         {/* ── SystemBar 系统状态栏 ── */}
         <div className="w-full flex items-center px-0 h-[44px] shrink-0" style={{ maxWidth: 375 }}>

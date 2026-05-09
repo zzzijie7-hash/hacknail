@@ -88,10 +88,10 @@ export default function Shops({ onBack, onChat, nailData }) {
     : shops.filter(s => s.category?.includes(activeFilter))
 
   return (
-    <div className="min-h-screen flex flex-col items-center"
-      style={{ fontFamily: "'PingFang SC', -apple-system, 'SF Pro', sans-serif", background: '#fff' }}>
+    <div className="flex flex-col items-center"
+      style={{ fontFamily: "'PingFang SC', -apple-system, 'SF Pro', sans-serif", background: '#fff', minHeight: '100%', height: '100%' }}>
 
-      <div className="w-full bg-white" style={{ maxWidth: 375 }}>
+      <div className="w-full bg-white" style={{ maxWidth: 375, minHeight: '100%', height: '100%' }}>
 
         {/* ── 顶栏: back + 搜索框 ── */}
         <div className="flex items-center h-[44px] px-[16px] gap-[10px] sticky top-0 bg-white z-20">

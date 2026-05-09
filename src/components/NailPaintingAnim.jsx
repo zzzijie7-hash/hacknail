@@ -22,83 +22,8 @@ function clampPoint(point) {
   }
 }
 
-function buildStickerPath(points) {
-  if (!points.length) return 'M 25 72 Q 50 28 75 72 Q 50 88 25 72 Z'
-
-  const xs = points.map(p => p.x * 100)
-  const ys = points.map(p => p.y * 100)
-  const minX = Math.max(8, Math.min(...xs) - 14)
-  const maxX = Math.min(92, Math.max(...xs) + 14)
-  const minY = Math.max(8, Math.min(...ys) - 22)
-  const maxY = Math.min(92, Math.max(...ys) + 12)
-  const midX = (minX + maxX) / 2
-  const midY = (minY + maxY) / 2
-
-  return [
-    `M ${minX} ${maxY - 5}`,
-    `Q ${minX - 4} ${midY + 10} ${minX + 5} ${minY + 8}`,
-    `Q ${midX - 12} ${minY - 6} ${midX} ${minY}`,
-    `Q ${midX + 14} ${minY - 8} ${maxX - 4} ${minY + 12}`,
-    `Q ${maxX + 5} ${midY + 4} ${maxX - 2} ${maxY - 8}`,
-    `Q ${midX + 10} ${maxY + 8} ${midX - 2} ${maxY - 2}`,
-    `Q ${minX + 10} ${maxY + 8} ${minX} ${maxY - 5}`,
-    'Z',
-  ].join(' ')
-}
-
 function segmentAngle(from, to) {
   return Math.atan2(to.y - from.y, to.x - from.x) * 180 / Math.PI
-}
-
-function SuccessSticker({ points, visible }) {
-  const stickerPath = useMemo(() => buildStickerPath(points), [points])
-
-  return (
-    <div
-      style={{
-        position: 'absolute',
-        inset: 0,
-        opacity: visible ? 1 : 0,
-        transition: 'opacity 320ms ease',
-        pointerEvents: 'none',
-        zIndex: 18,
-      }}
-    >
-      <div
-        style={{
-          position: 'absolute',
-          inset: 0,
-          background: 'rgba(0, 0, 0, 0.26)',
-          backdropFilter: 'blur(1.5px)',
-        }}
-      />
-      <svg viewBox="0 0 100 100" preserveAspectRatio="none" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}>
-        <g style={{ transformOrigin: '50% 50%', animation: visible ? 'stickerPop 900ms ease forwards' : 'none' }}>
-          <path d={stickerPath} fill="rgba(255,255,255,0.08)" stroke="#A062C9" strokeWidth="0.8" strokeLinejoin="round" />
-          <path d={stickerPath} fill="none" stroke="#A062C9" strokeWidth="0.5" strokeDasharray="1.3 1.6" opacity="0.7" />
-          <path d="M18 22 L21 16 L24 22 L30 25 L24 28 L21 34 L18 28 L12 25 Z" fill="rgba(255,255,255,0.9)" stroke="#A062C9" strokeWidth="0.6" />
-          <path d="M76 17 L78 13 L80 17 L84 19 L80 21 L78 25 L76 21 L72 19 Z" fill="rgba(255,255,255,0.9)" stroke="#A062C9" strokeWidth="0.6" />
-          <path d="M79 73 L82 67 L85 73 L91 76 L85 79 L82 85 L79 79 L73 76 Z" fill="rgba(255,255,255,0.9)" stroke="#A062C9" strokeWidth="0.6" />
-          <path d="M11 58 L16 56" stroke="#A062C9" strokeWidth="0.7" strokeLinecap="round" />
-          <path d="M14 64 L20 66" stroke="#A062C9" strokeWidth="0.7" strokeLinecap="round" />
-          <path d="M85 58 L90 54" stroke="#A062C9" strokeWidth="0.7" strokeLinecap="round" />
-          <path d="M84 64 L90 67" stroke="#A062C9" strokeWidth="0.7" strokeLinecap="round" />
-          <text x="50" y="14" textAnchor="middle" fill="#F3DFFF" fontSize="5.8" fontWeight="700" letterSpacing="1.2">
-            DONE
-          </text>
-        </g>
-      </svg>
-      <style>{`
-        @keyframes stickerPop {
-          0% { transform: scale(0.86) rotate(-8deg); }
-          35% { transform: scale(1.5) rotate(2deg); }
-          58% { transform: scale(0.96) rotate(-3deg); }
-          74% { transform: scale(1.02) rotate(2deg); }
-          100% { transform: scale(1) rotate(0deg); }
-        }
-      `}</style>
-    </div>
-  )
 }
 
 export default function NailPaintingAnim({
@@ -120,6 +45,7 @@ export default function NailPaintingAnim({
   const [flipX, setFlipX] = useState(1)
   const [success, setSuccess] = useState(false)
   const [pathVisible, setPathVisible] = useState(false)
+  const [segment, setSegment] = useState(null)
 
   useEffect(() => {
     setCurrentIndex(0)
@@ -129,6 +55,7 @@ export default function NailPaintingAnim({
     setFlipX(1)
     setSuccess(false)
     setPathVisible(false)
+    setSegment(null)
   }, [normalizedPoints])
 
   useEffect(() => {
@@ -152,6 +79,7 @@ export default function NailPaintingAnim({
         setWorkerPos(point)
         setPhase('work')
         setWorkerAngle(-16)
+        setSegment(null)
 
         for (let swing = 0; swing < WORK_SWINGS; swing += 1) {
           if (cancelled) return
@@ -168,6 +96,7 @@ export default function NailPaintingAnim({
         const nextPoint = normalizedPoints[i + 1]
         setPhase('move')
         setPathVisible(true)
+        setSegment({ from: point, to: nextPoint })
         setFlipX(nextPoint.x >= point.x ? 1 : -1)
         setWorkerAngle(segmentAngle(point, nextPoint) * 0.28)
         await wait(40)
@@ -177,11 +106,30 @@ export default function NailPaintingAnim({
         setPathVisible(false)
       }
 
+      for (let i = normalizedPoints.length - 1; i > 0; i -= 1) {
+        if (cancelled) return
+        const point = normalizedPoints[i]
+        const prevPoint = normalizedPoints[i - 1]
+        setPhase('return')
+        setPathVisible(true)
+        setSegment({ from: point, to: prevPoint })
+        setFlipX(prevPoint.x >= point.x ? 1 : -1)
+        setWorkerAngle(segmentAngle(point, prevPoint) * 0.28)
+        await wait(40)
+        if (cancelled) return
+        setWorkerPos(prevPoint)
+        setCurrentIndex(i - 1)
+        await wait(MOVE_MS)
+        setPathVisible(false)
+        await wait(180)
+      }
+
       if (cancelled) return
       setPhase('done')
       setSuccess(true)
       setFlipX(1)
       setWorkerAngle(0)
+      setSegment(null)
       onComplete?.()
     }
 
@@ -192,15 +140,13 @@ export default function NailPaintingAnim({
     }
   }, [active, normalizedPoints, onComplete])
 
-  const activePoint = normalizedPoints[currentIndex]
-  const nextPoint = normalizedPoints[currentIndex + 1]
-  const isMoving = phase === 'move'
+  const isMoving = phase === 'move' || phase === 'return'
 
   return (
     <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 14, overflow: 'hidden' }}>
       <svg viewBox="0 0 100 100" preserveAspectRatio="none" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}>
         {showDebugPoints && normalizedPoints.map((point, index) => {
-          const done = index < currentIndex || phase === 'done'
+          const done = phase === 'return' || phase === 'done' || index < currentIndex
           const focused = index === currentIndex && phase !== 'done'
           return (
             <g key={`${point.x}-${point.y}-${index}`}>
@@ -224,12 +170,12 @@ export default function NailPaintingAnim({
           )
         })}
 
-        {pathVisible && activePoint && nextPoint && (
+        {pathVisible && segment && (
           <line
-            x1={activePoint.x * 100}
-            y1={activePoint.y * 100}
-            x2={nextPoint.x * 100}
-            y2={nextPoint.y * 100}
+            x1={segment.from.x * 100}
+            y1={segment.from.y * 100}
+            x2={segment.to.x * 100}
+            y2={segment.to.y * 100}
             stroke="#A062C9"
             strokeWidth="0.6"
             strokeDasharray="1.5 1.5"
@@ -293,13 +239,14 @@ export default function NailPaintingAnim({
         >
           {phase === 'done'
             ? '施工完成，正在贴上成功贴纸'
-            : phase === 'move'
+            : phase === 'return'
+              ? '绘制完毕，正在逐个封层加固'
+              : phase === 'move'
               ? `前往第 ${Math.min(currentIndex + 2, normalizedPoints.length)} 个检测点`
               : '施工中，请耐心等待效果...'}
         </div>
       </div>
 
-      <SuccessSticker points={normalizedPoints} visible={success} />
     </div>
   )
 }

@@ -24,8 +24,10 @@ export default function App() {
   const [progress, setProgress] = useState(0)
 
   const [feedKey, setFeedKey] = useState(0)
-  const [provider, setProvider] = useState(() => localStorage.getItem('cybernail_provider') || 'openai')
+  const [provider, setProvider] = useState('openai')
   const [selectedProduct, setSelectedProduct] = useState(null)
+
+  let currentPage = null
 
   // provider 切换时同步到后端
   const changeProvider = (p) => {
@@ -40,15 +42,15 @@ export default function App() {
 
   // AI 对话页
   if (page === 'aichat') {
-    return <AIChat
+    currentPage = <AIChat
       onBack={() => setPage('feed')}
       onTryOn={() => setPage('smartwear')}
     />
   }
 
   // 小红书首页 → 帖子详情
-  if (page === 'post' && postData) {
-    return <PostDetail
+  if (!currentPage && page === 'post' && postData) {
+    currentPage = <PostDetail
       post={postData}
       onBack={() => setPage('feed')}
       onTryOn={(post) => {
@@ -59,8 +61,8 @@ export default function App() {
   }
 
   // 智能穿戴核心页
-  if (page === 'smartwear') {
-    return <SmartWear
+  if (!currentPage && page === 'smartwear') {
+    currentPage = <SmartWear
       onBack={() => setPage('feed')}
       onBuySimilar={() => setPage('buy-similar')}
       onFindShops={() => setPage('shops')}
@@ -82,8 +84,8 @@ export default function App() {
   }
 
   // 买同款
-  if (page === 'buy-similar') {
-    return <BuySimilar
+  if (!currentPage && page === 'buy-similar') {
+    currentPage = <BuySimilar
       onBack={() => setPage('smartwear')}
       onMall={(product) => { if (product) setSelectedProduct(product); setPage('mall') }}
       nailStyle={nailStyle}
@@ -92,8 +94,8 @@ export default function App() {
   }
 
   // 商城搜索
-  if (page === 'mall') {
-    return <Mall
+  if (!currentPage && page === 'mall') {
+    currentPage = <Mall
       onBack={() => setPage('buy-similar')}
       onProduct={(p) => { setSelectedProduct(p); setPage('product') }}
       onTryOn={() => setPage('smartwear')}
@@ -102,8 +104,8 @@ export default function App() {
   }
 
   // 商品详情
-  if (page === 'product') {
-    return <ProductDetail
+  if (!currentPage && page === 'product') {
+    currentPage = <ProductDetail
       onBack={() => setPage('mall')}
       product={selectedProduct}
       nailStyle={nailStyle}
@@ -111,8 +113,8 @@ export default function App() {
   }
 
   // 附近商家列表
-  if (page === 'shops') {
-    return <Shops
+  if (!currentPage && page === 'shops') {
+    currentPage = <Shops
       onBack={() => setPage('smartwear')}
       onChat={(shop) => { setShopData(shop); setPage('chat') }}
       nailData={{ result, nail: nailStyle }}
@@ -120,8 +122,8 @@ export default function App() {
   }
 
   // 私信商家
-  if (page === 'chat' && shopData) {
-    return <Chat
+  if (!currentPage && page === 'chat' && shopData) {
+    currentPage = <Chat
       shop={shopData}
       nailData={{ result, nail: nailStyle }}
       onBack={() => setPage('shops')}
@@ -130,14 +132,33 @@ export default function App() {
   }
 
   // 素材上传页
-  if (page === 'upload') {
-    return <UploadPage onBack={() => { setPage('feed'); setFeedKey(k => k + 1) }} />
+  if (!currentPage && page === 'upload') {
+    currentPage = <UploadPage onBack={() => { setPage('feed'); setFeedKey(k => k + 1) }} />
   }
 
   // 默认：小红书首页
-  return <Feed key={feedKey}
-    onPost={(post) => { setPostData(post); setPage('post') }}
-    onAIChat={() => setPage('aichat')}
-    onUpload={() => setPage('upload')}
-  />
+  if (!currentPage) {
+    currentPage = <Feed
+      key={feedKey}
+      onPost={(post) => { setPostData(post); setPage('post') }}
+      onAIChat={() => setPage('aichat')}
+    />
+  }
+
+  return (
+    <div style={{
+      width: 375,
+      minWidth: 375,
+      maxWidth: 375,
+      height: 812,
+      background: '#000',
+      overflow: 'hidden',
+      position: 'relative',
+      borderRadius: 36,
+      border: '1px solid rgba(255,255,255,0.95)',
+      boxShadow: '0 18px 48px rgba(0,0,0,0.28)',
+    }}>
+      {currentPage}
+    </div>
+  )
 }

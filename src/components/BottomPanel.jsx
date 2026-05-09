@@ -2,7 +2,7 @@ import { useEffect } from 'react'
 
 const STYLE = {
   overlay: (open) => ({
-    position: 'fixed',
+    position: 'absolute',
     inset: 0,
     zIndex: 40,
     background: 'rgba(0,0,0,0.4)',
@@ -11,12 +11,12 @@ const STYLE = {
     transition: 'opacity 0.3s',
   }),
   sheet: (open, height) => ({
-    position: 'fixed',
+    position: 'absolute',
     bottom: 0,
-    left: '50%',
+    left: 0,
+    right: 0,
     zIndex: 50,
     width: '100%',
-    maxWidth: 393,
     height: height || undefined,
     maxHeight: height ? undefined : '80vh',
     background: '#ffffff',
@@ -25,8 +25,8 @@ const STYLE = {
     display: 'flex',
     flexDirection: 'column',
     transform: open
-      ? 'translateX(-50%) translateY(0)'
-      : 'translateX(-50%) translateY(100%)',
+      ? 'translateY(0)'
+      : 'translateY(100%)',
     transition: 'transform 0.35s cubic-bezier(0.32, 0.72, 0, 1)',
     overflow: 'hidden',
   }),

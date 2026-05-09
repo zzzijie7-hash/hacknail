@@ -51,7 +51,7 @@ export default function PostDetail({ post, onBack, onTryOn }) {
   return (
     <div style={{
       fontFamily: "'PingFang SC', -apple-system, sans-serif",
-      maxWidth: 375, margin: '0 auto', background: '#fff', height: '100vh',
+      maxWidth: 375, margin: '0 auto', background: '#fff', height: '100%',
       display: 'flex', flexDirection: 'column', overflow: 'hidden',
     }}>
       {/* ── SystemBar ── */}

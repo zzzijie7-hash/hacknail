@@ -23,6 +23,7 @@ FINGERS = {
 NAIL_WIDTH_FACTOR = 0.40
 NAIL_TIP_EXTEND = 0.25
 NAIL_START_SHIFT = 0.05
+HAND_OUTLINE_ORDER = [0, 1, 2, 5, 9, 13, 17, 18, 19, 20, 16, 12, 8, 4, 3, 2]
 
 
 def detect_nail_masks(image_bytes):
@@ -66,6 +67,7 @@ def detect_nail_masks(image_bytes):
     mask = Image.new("RGBA", (w, h), (0, 0, 0, 200))
     draw = ImageDraw.Draw(mask)
     nail_info = []
+    hand_outline = _build_hand_outline(lm_list, w, h)
 
     for finger_name, (_, mcp_idx, dip_idx, tip_idx) in FINGERS.items():
         mcp = _pt(lm_list[mcp_idx], w, h)
@@ -102,7 +104,7 @@ def detect_nail_masks(image_bytes):
         nail_info.append({"finger": finger_name, "center": nail_center, "corners": corners})
 
     print(f"[nail_mask] detected {len(nail_info)} nails")
-    return mask, nail_info
+    return mask, nail_info, hand_outline
 
 
 def _pt(landmark, w, h):
@@ -124,4 +126,12 @@ def _fallback_mask(w, h):
     nw, nh = w * 0.06, h * 0.06
     for cx in [w * 0.60, w * 0.48, w * 0.36, w * 0.24, w * 0.14]:
         draw.ellipse([cx - nw, tip_y - nh, cx + nw, tip_y + nh], fill=(0, 0, 0, 0))
-    return mask, []
+    return mask, [], []
+
+
+def _build_hand_outline(lm_list, w, h):
+    outline = []
+    for idx in HAND_OUTLINE_ORDER:
+        landmark = lm_list[idx]
+        outline.append((landmark.x * w, landmark.y * h))
+    return outline
