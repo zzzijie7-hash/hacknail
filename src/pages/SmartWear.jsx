@@ -727,6 +727,18 @@ export default function SmartWear({
     }
   }, [demoPreviewActive, revealGeneratedResult])
 
+  useEffect(() => {
+    if (demoPreviewActive) return
+    if (generationStage !== 'sealing') return
+    if (!pendingGeneratedImageRef.current) return
+
+    const fallbackTimer = window.setTimeout(() => {
+      revealGeneratedResult(pendingGeneratedImageRef.current)
+    }, 1200)
+
+    return () => window.clearTimeout(fallbackTimer)
+  }, [demoPreviewActive, generationStage, revealGeneratedResult])
+
   const SimulateButton = (mode === 'capture' || mode === 'confirm') ? (
     <button
       onClick={() => mockGenerate('模拟生成效果')}
