@@ -245,18 +245,14 @@ async def cyber_nails(hand: UploadFile = File(...), nail: UploadFile = File(None
         try:
             return await _openai_masked_edits(hand_compressed, hand_mask, nail_compressed, prompt)
         except Exception as e:
-            print(f"[OpenAI failed, fallback]: {e}")
-            try:
-                return await _grok_masked_gen(hand_compressed, nail_compressed, prompt)
-            except Exception as fallback_error:
-                print(f"[Grok failed after OpenAI]: {fallback_error}")
-                raise HTTPException(429, "后端模型token用尽")
+            print(f"[OpenAI failed]: {e}")
+            raise HTTPException(502, f"OpenAI generation failed: {str(e)[:200]}")
     else:
         try:
             return await _grok_masked_gen(hand_compressed, nail_compressed, prompt)
         except Exception as e:
             print(f"[Grok failed]: {e}")
-            raise HTTPException(429, "后端模型token用尽")
+            raise HTTPException(502, f"Grok generation failed: {str(e)[:200]}")
 
 
 async def _analyze_nail_style(nail_data):
@@ -351,12 +347,12 @@ async def _openai_masked_edits(hd, mask_png, nd, prompt):
     if "data" in data and data["data"]:
         b64 = data["data"][0].get("b64_json")
         if b64:
-            return JSONResponse({"image": f"data:image/png;base64,{b64}"})
+            return JSONResponse({"image": f"data:image/png;base64,{b64}", "provider_used": "openai"})
         url = data["data"][0].get("url")
         if url:
             async with httpx.AsyncClient(timeout=60) as ic:
                 ir = await ic.get(url)
-            return JSONResponse({"image": f"data:image/png;base64,{base64.b64encode(ir.content).decode()}"})
+            return JSONResponse({"image": f"data:image/png;base64,{base64.b64encode(ir.content).decode()}", "provider_used": "openai"})
     raise Exception(f"No image: {json.dumps(data)[:500]}")
 
 
@@ -383,10 +379,10 @@ async def _grok_masked_gen(hd, nd, prompt):
         raise ValueError("No image in grok response")
     img_url = urls[0]
     if img_url.startswith("data:"):
-        return JSONResponse({"image": img_url})
+        return JSONResponse({"image": img_url, "provider_used": "grok"})
     async with httpx.AsyncClient(timeout=60) as ic:
         ir = await ic.get(img_url)
-    return JSONResponse({"image": f"data:image/png;base64,{base64.b64encode(ir.content).decode()}"})
+    return JSONResponse({"image": f"data:image/png;base64,{base64.b64encode(ir.content).decode()}", "provider_used": "grok"})
 
 # ── Analyze Hand ────────────────────────────────────────
 @app.post("/api/analyze-hand")
