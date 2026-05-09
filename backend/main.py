@@ -1,10 +1,12 @@
 import os, re, io, json, base64, pathlib, shutil
 import httpx
+import numpy as np
 from PIL import Image
 from fastapi import FastAPI, File, Form, UploadFile, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
+from nail_mask import detect_nail_masks
 
 app = FastAPI()
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
@@ -139,7 +141,7 @@ async def get_provider():
 # ── Cyber Nails ────────────────────────────────────────
 @app.post("/api/cyber-nails")
 async def cyber_nails(hand: UploadFile = File(...), nail: UploadFile = File(None),
-                      nail_url: str = Form(None)):
+                      nail_url: str = Form(None), nail_shape: str = Form("squoval")):
     hand_data = await hand.read()
     if nail and nail.filename:
         nail_data = await nail.read()
@@ -170,10 +172,12 @@ async def cyber_nails(hand: UploadFile = File(...), nail: UploadFile = File(None
     nail_compressed = compress(nail_data)
 
     style_raw = await _analyze_nail_style(nail_compressed)
+    shape_instruction = NAIL_SHAPE_PROMPTS.get(nail_shape, "")
     prompt = (
         "Edit the hand photo: apply ONLY to the fingernail areas the nail art design "
         "described in this JSON specification. \n\n"
         f"DESIGN SPECIFICATION:\n{style_raw}\n\n"
+        f"NAIL SHAPE REQUIREMENT: {shape_instruction}\n\n"
         "Follow the JSON exactly: each finger's base color, pattern, accent, and decorations "
         "must match the specification. Replicate all decorations precisely — count, type, "
         "color, and position on the correct finger. "
@@ -316,6 +320,203 @@ async def _grok_masked_gen(hd, nd, prompt):
     async with httpx.AsyncClient(timeout=60) as ic:
         ir = await ic.get(img_url)
     return JSONResponse({"image": f"data:image/png;base64,{base64.b64encode(ir.content).decode()}"})
+
+# ── Analyze Hand ────────────────────────────────────────
+@app.post("/api/analyze-hand")
+async def analyze_hand(hand: UploadFile = File(...)):
+    """分析手部图片，返回指甲坐标 + 肤色分析"""
+    hand_data = await hand.read()
+    img = Image.open(io.BytesIO(hand_data)).convert("RGB")
+    w, h = img.size
+
+    _, nail_info = detect_nail_masks(hand_data)
+
+    # 归一化指甲中心坐标 (0~1)
+    nails = []
+    for n in nail_info:
+        cx, cy = n["center"]
+        nails.append({
+            "finger": n["finger"],
+            "x": round(cx / w, 4),
+            "y": round(cy / h, 4),
+        })
+
+    # 肤色采样：从手部中心区域采样
+    skin_analysis = _analyze_skin_tone(np.array(img), nail_info, w, h)
+
+    return JSONResponse({
+        "nails": nails,
+        "hand_size": {"width": w, "height": h},
+        **skin_analysis,
+    })
+
+
+def _analyze_skin_tone(rgb_arr, nail_info, w, h):
+    """从手部图像采样肤色，返回 LAB 分析结果"""
+    try:
+        from skimage import color
+        lab = color.rgb2lab(rgb_arr / 255.0)
+    except Exception:
+        # 回退：手动近似
+        lab = _rgb2lab_approx(rgb_arr)
+
+    # 采集非指甲区域的手部肤色样本
+    mask = np.ones((h, w), dtype=bool)
+    for n in nail_info:
+        cx, cy = int(n["center"][0]), int(n["center"][1])
+        r = 25
+        y0, y1 = max(0, cy - r), min(h, cy + r)
+        x0, x1 = max(0, cx - r), min(w, cx + r)
+        mask[y0:y1, x0:x1] = False
+
+    # 采样中心偏上的手背区域
+    sample_y0, sample_y1 = int(h * 0.25), int(h * 0.55)
+    sample_x0, sample_x1 = int(w * 0.2), int(w * 0.8)
+    sample_region = lab[sample_y0:sample_y1, sample_x0:sample_x1]
+    sample_mask = mask[sample_y0:sample_y1, sample_x0:sample_x1]
+    valid = sample_region[sample_mask]
+
+    if len(valid) == 0:
+        return {"skin_tone": "unknown", "lightness": "unknown",
+                "color_suggestion": "百搭裸色系", "nail_shape_suggestion": "方圆甲"}
+
+    L_mean = float(np.mean(valid[:, 0]))
+    A_mean = float(np.mean(valid[:, 1]))
+    B_mean = float(np.mean(valid[:, 2]))
+
+    # L: 0~100 (黑~白), A: 绿~红, B: 蓝~黄
+    if L_mean > 70:
+        lightness = "白皙"
+    elif L_mean > 50:
+        lightness = "自然"
+    else:
+        lightness = "较深"
+
+    if A_mean > 2 and B_mean > 2:
+        tone = "暖调"
+        cs = "红棕、豆沙、橘调"
+    elif A_mean < 0 and B_mean < 0:
+        tone = "冷调"
+        cs = "蓝紫、莓果、裸粉"
+    else:
+        tone = "中性"
+        cs = "百搭色系，冷暖皆宜"
+
+    # 甲型推荐：基于手部宽高比
+    if w / h > 0.65:
+        shape_rec = "椭圆甲或杏仁甲，视觉上拉长手指"
+    elif w / h < 0.5:
+        shape_rec = "方形甲或方圆甲，让手部更有力量感"
+    else:
+        shape_rec = "方圆甲，自然百搭"
+
+    return {
+        "skin_tone": tone,
+        "lightness": lightness,
+        "lab_values": {"L": round(L_mean, 1), "A": round(A_mean, 1), "B": round(B_mean, 1)},
+        "color_suggestion": cs,
+        "nail_shape_suggestion": shape_rec,
+    }
+
+
+def _rgb2lab_approx(rgb_arr):
+    """不依赖 skimage 的 RGB→LAB 近似转换"""
+    rgb = rgb_arr.astype(np.float64) / 255.0
+    # RGB → XYZ (sRGB D65)
+    rgb = np.where(rgb > 0.04045, ((rgb + 0.055) / 1.055) ** 2.4, rgb / 12.92)
+    rgb = rgb.reshape(-1, 3)
+    M = np.array([
+        [0.4124564, 0.3575761, 0.1804375],
+        [0.2126729, 0.7151522, 0.0721750],
+        [0.0193339, 0.1191920, 0.9503041],
+    ])
+    xyz = rgb @ M.T
+    # XYZ → LAB (D65 ref)
+    ref = np.array([0.95047, 1.0, 1.08883])
+    xyz_ratio = xyz / ref
+    xyz_ratio = np.where(xyz_ratio > 0.008856, xyz_ratio ** (1 / 3), 7.787 * xyz_ratio + 16 / 116)
+    L = 116 * xyz_ratio[:, 1] - 16
+    A = 500 * (xyz_ratio[:, 0] - xyz_ratio[:, 1])
+    B = 200 * (xyz_ratio[:, 1] - xyz_ratio[:, 2])
+    lab = np.stack([L, A, B], axis=1).reshape(rgb_arr.shape[0], rgb_arr.shape[1], 3)
+    return lab
+
+
+# ── Shape Nails ─────────────────────────────────────────
+NAIL_SHAPE_PROMPTS = {
+    "square": "修改指甲形状为方形（square shape），指甲前缘平直，两侧直线，棱角分明。只改指甲形状，保持自然肤色和光影。",
+    "oval": "修改指甲形状为椭圆形（oval shape），指甲前缘圆润呈椭圆弧状，两侧自然收窄。只改指甲形状，保持自然肤色和光影。",
+    "squoval": "修改指甲形状为方圆甲（squoval shape），指甲前缘微微圆润但大致平直，两侧柔和过渡。只改指甲形状，保持自然肤色和光影。",
+    "almond": "修改指甲形状为杏仁甲（almond shape），指甲两侧向中间逐渐收窄，尖端圆润柔和，不要过尖。只改指甲形状，保持自然肤色和光影。",
+}
+
+@app.post("/api/shape-nails")
+async def shape_nails(hand: UploadFile = File(...), nail_shape: str = Form("almond")):
+    """仅修甲型，不改颜色"""
+    if nail_shape not in NAIL_SHAPE_PROMPTS:
+        raise HTTPException(400, f"不支持的甲型: {nail_shape}，可选: {list(NAIL_SHAPE_PROMPTS.keys())}")
+    hand_data = await hand.read()
+    img = Image.open(io.BytesIO(hand_data)).convert("RGB")
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    hand_png = buf.getvalue()
+
+    prompt = NAIL_SHAPE_PROMPTS[nail_shape]
+    try:
+        return await _openai_shape_edits(hand_png, prompt)
+    except Exception as e:
+        print(f"[shape-nails OpenAI failed, try grok]: {e}")
+        return await _grok_shape_gen(hand_png, prompt)
+
+
+async def _openai_shape_edits(hand_png, prompt):
+    files = [("image", ("hand.png", hand_png, "image/png"))]
+    async with httpx.AsyncClient(timeout=300) as c:
+        resp = await c.post(
+            f"{OPENAI_BASE_URL}/images/edits",
+            headers={"Authorization": f"Bearer {OPENAI_API_KEY}"},
+            data={"model": "gpt-image-1", "prompt": prompt, "n": "1", "size": "1024x1024"},
+            files=files,
+        )
+    if resp.status_code != 200:
+        raise Exception(f"OpenAI shape error {resp.status_code}: {resp.text[:500]}")
+    data = resp.json()
+    if "data" in data and data["data"]:
+        b64 = data["data"][0].get("b64_json")
+        if b64:
+            return JSONResponse({"image": f"data:image/png;base64,{b64}"})
+        url = data["data"][0].get("url")
+        if url:
+            async with httpx.AsyncClient(timeout=60) as ic:
+                ir = await ic.get(url)
+            return JSONResponse({"image": f"data:image/png;base64,{base64.b64encode(ir.content).decode()}"})
+    raise Exception(f"No image: {json.dumps(data)[:500]}")
+
+
+async def _grok_shape_gen(hand_png, prompt):
+    hb64 = base64.b64encode(hand_png).decode()
+    async with httpx.AsyncClient(timeout=300) as c:
+        resp = await c.post(
+            f"{FALLBACK_BASE_URL}/chat/completions",
+            headers={"Authorization": f"Bearer {FALLBACK_API_KEY}", "Content-Type": "application/json"},
+            json={"model": "grok-3-image", "messages": [{"role": "user", "content": [
+                {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{hb64}"}},
+                {"type": "text", "text": prompt},
+            ]}]},
+        )
+    data = resp.json()
+    if "error" in data or "choices" not in data:
+        raise HTTPException(500, str(data))
+    urls = re.findall(r'!\[.*?\]\((.*?)\)', data["choices"][0]["message"]["content"])
+    if not urls:
+        raise ValueError("No image in grok response")
+    img_url = urls[0]
+    if img_url.startswith("data:"):
+        return JSONResponse({"image": img_url})
+    async with httpx.AsyncClient(timeout=60) as ic:
+        ir = await ic.get(img_url)
+    return JSONResponse({"image": f"data:image/png;base64,{base64.b64encode(ir.content).decode()}"})
+
 
 # ── Parse URL ──────────────────────────────────────────
 class ParseUrlRequest(BaseModel):

@@ -110,19 +110,77 @@ export default function PostDetail({ post, onBack, onTryOn }) {
             </div>
           )}
 
-          {/* Agent 按钮 (Figma: 87x36, cornerRadius=30, bg rgba(48,48,52,0.2), 1px white stroke, bottom/right=10) */}
+          {/* 居中试同款 hashtag 引导 */}
           {agent.label && (
-            <button onClick={() => onTryOn(post)}
-              className="absolute text-white flex items-center justify-center active:scale-95 transition-transform"
+            <div
+              className="absolute pointer-events-none"
               style={{
-                bottom: 10, right: 10, width: 87, height: 36,
-                background: 'rgba(48,48,52,0.2)', borderRadius: 30, gap: 6,
-                border: '1px solid white',
-                fontSize: 13, fontWeight: 500, lineHeight: '20px',
-              }}>
-              试同款
-              <img src="/icons/tryon-arrow.svg" width={14} height={14} alt="" />
-            </button>
+                left: '50%',
+                top: '50%',
+                transform: 'translate(-50%, -50%)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 4,
+                zIndex: 10,
+              }}
+            >
+              <div
+                style={{
+                  position: 'relative',
+                  width: 14,
+                  height: 14,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  animation: 'tryOnPulse 1.6s ease-in-out infinite',
+                }}
+              >
+                <div
+                  style={{
+                    position: 'absolute',
+                    width: 14,
+                    height: 14,
+                    borderRadius: '50%',
+                    background: 'rgba(255,255,255,0.4)',
+                    boxShadow: '0 0 16px rgba(241,234,255,0.55)',
+                  }}
+                />
+                <div
+                  style={{
+                    position: 'absolute',
+                    width: 6,
+                    height: 6,
+                    borderRadius: '50%',
+                    background: '#F1EAFF',
+                    boxShadow: '0 0 10px rgba(241,234,255,0.95)',
+                  }}
+                />
+              </div>
+              <button
+                onClick={() => onTryOn(post)}
+                className="active:scale-95 transition-transform"
+                style={{
+                  pointerEvents: 'auto',
+                  border: 'none',
+                  borderRadius: 999,
+                  background: 'rgba(241,234,255,0.56)',
+                  backdropFilter: 'blur(10px)',
+                  WebkitBackdropFilter: 'blur(10px)',
+                  boxShadow: '0 8px 24px rgba(121,42,255,0.08), inset 0 1px 0 rgba(255,255,255,0.4)',
+                  color: '#792AFF',
+                  padding: '8px 10px',
+                  fontSize: 13,
+                  fontWeight: 600,
+                  lineHeight: '18px',
+                  border: '1px solid rgba(255,255,255,0.32)',
+                  opacity: 0,
+                  transform: 'translateX(-10px) scale(0.96)',
+                  animation: 'tryOnTagIn 420ms cubic-bezier(0.2, 0.8, 0.2, 1) 0.5s forwards',
+                }}
+              >
+                试试看！
+              </button>
+            </div>
           )}
         </div>
 
@@ -281,6 +339,29 @@ export default function PostDetail({ post, onBack, onTryOn }) {
           </div>
         </div>
       </div>
+      <style>{`
+        @keyframes tryOnPulse {
+          0%, 100% {
+            transform: scale(1);
+            opacity: 0.88;
+          }
+          50% {
+            transform: scale(1.16);
+            opacity: 1;
+          }
+        }
+
+        @keyframes tryOnTagIn {
+          0% {
+            opacity: 0;
+            transform: translateX(-10px) scale(0.96);
+          }
+          100% {
+            opacity: 1;
+            transform: translateX(0) scale(1);
+          }
+        }
+      `}</style>
     </div>
   )
 }
