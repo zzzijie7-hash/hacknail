@@ -27,6 +27,25 @@ FALLBACK_API_KEY = os.environ.get("FALLBACK_API_KEY", "sk-TD5mko9EUjlhT293pGfzrw
 FALLBACK_BASE_URL = "https://yungpt.com/v1"
 _current_provider = "openai"
 
+
+def _pil_to_png_bytes(image):
+    buf = io.BytesIO()
+    image.save(buf, format="PNG")
+    return buf.getvalue()
+
+
+def _build_openai_edit_mask(image_bytes):
+    """
+    OpenAI edits expects transparent pixels where the model is allowed to repaint.
+    We keep the whole canvas opaque except detected nail regions, which stay transparent.
+    """
+    mask_rgba, _, _ = detect_nail_masks(image_bytes)
+    mask = mask_rgba.copy().convert("RGBA")
+    alpha = mask.getchannel("A").point(lambda value: 0 if value < 10 else 255)
+    solid = Image.new("RGBA", mask.size, (255, 255, 255, 255))
+    solid.putalpha(alpha)
+    return _pil_to_png_bytes(solid)
+
 # ── manifest.json 读写 ──────────────────────────────────
 def _load_manifest():
     p = PUBLIC / "manifest.json"
@@ -204,6 +223,7 @@ async def cyber_nails(hand: UploadFile = File(...), nail: UploadFile = File(None
 
     hand_compressed = compress(hand_data)
     nail_compressed = compress(nail_data)
+    hand_mask = _build_openai_edit_mask(hand_compressed)
 
     style_raw = await _analyze_nail_style(nail_compressed)
     shape_instruction = NAIL_SHAPE_PROMPTS.get(nail_shape, "")
@@ -223,7 +243,7 @@ async def cyber_nails(hand: UploadFile = File(...), nail: UploadFile = File(None
 
     if requested_provider == "openai":
         try:
-            return await _openai_masked_edits(hand_compressed, nail_compressed, prompt)
+            return await _openai_masked_edits(hand_compressed, hand_mask, nail_compressed, prompt)
         except Exception as e:
             print(f"[OpenAI failed, fallback]: {e}")
             try:
@@ -308,8 +328,11 @@ Output ONLY valid JSON, no markdown:
 
 
 
-async def _openai_masked_edits(hd, nd, prompt):
-    files = [("image", ("hand.png", hd, "image/png"))]
+async def _openai_masked_edits(hd, mask_png, nd, prompt):
+    files = [
+        ("image", ("hand.png", hd, "image/png")),
+        ("mask", ("mask.png", mask_png, "image/png")),
+    ]
     async with httpx.AsyncClient(timeout=300) as c:
         resp = await c.post(
             f"{OPENAI_BASE_URL}/images/edits",
