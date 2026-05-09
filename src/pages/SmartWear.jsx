@@ -282,6 +282,7 @@ export default function SmartWear({
   const mockResultTimerRef = useRef(null)
   const realProgressTimerRef = useRef(null)
   const detectStageTimerRef = useRef(null)
+  const resultRevealTimerRef = useRef(null)
   const paintingPhaseRef = useRef('idle')
   const generationStageRef = useRef('idle')
   const pendingGeneratedImageRef = useRef(null)
@@ -539,6 +540,10 @@ export default function SmartWear({
       window.clearTimeout(detectStageTimerRef.current)
       detectStageTimerRef.current = null
     }
+    if (resultRevealTimerRef.current) {
+      window.clearTimeout(resultRevealTimerRef.current)
+      resultRevealTimerRef.current = null
+    }
     pendingGeneratedImageRef.current = null
     sealingMotionDoneRef.current = false
     onProgressChange?.(100)
@@ -586,6 +591,12 @@ export default function SmartWear({
       const r = await fetch(apiUrl('/cyber-nails'), { method: 'POST', body: form })
       const d = await r.json(); if (!r.ok) throw new Error(d.detail || '生成失败')
       pendingGeneratedImageRef.current = d.image
+      if (resultRevealTimerRef.current) {
+        window.clearTimeout(resultRevealTimerRef.current)
+      }
+      resultRevealTimerRef.current = window.setTimeout(() => {
+        revealGeneratedResult(d.image)
+      }, generationStageRef.current === 'sealing' ? 700 : 1200)
       if (generationStageRef.current === 'sealing' && sealingMotionDoneRef.current) {
         revealGeneratedResult(d.image)
       }
@@ -653,6 +664,10 @@ export default function SmartWear({
     if (mockResultTimerRef.current) {
       window.clearTimeout(mockResultTimerRef.current)
       mockResultTimerRef.current = null
+    }
+    if (resultRevealTimerRef.current) {
+      window.clearTimeout(resultRevealTimerRef.current)
+      resultRevealTimerRef.current = null
     }
   }
 
