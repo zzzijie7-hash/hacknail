@@ -6,7 +6,10 @@ from fastapi import FastAPI, File, Form, UploadFile, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
-from nail_mask import detect_nail_masks
+try:
+    from .nail_mask import detect_nail_masks
+except ImportError:
+    from nail_mask import detect_nail_masks
 
 app = FastAPI()
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])

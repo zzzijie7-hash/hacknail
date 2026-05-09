@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { memo, useEffect, useMemo, useRef, useState } from 'react'
 
 const DEFAULT_POINTS = [
   { x: 0.23, y: 0.7 },
@@ -26,11 +26,14 @@ function segmentAngle(from, to) {
   return Math.atan2(to.y - from.y, to.x - from.x) * 180 / Math.PI
 }
 
-export default function NailPaintingAnim({
+function NailPaintingAnim({
   points = DEFAULT_POINTS,
   workerSrc = '/icons/worker-potato.png',
+  stage = 'painting',
   active = true,
+  demoMode = false,
   showDebugPoints = true,
+  onForwardComplete,
   onComplete,
   onPhaseChange,
 }) {
@@ -38,6 +41,9 @@ export default function NailPaintingAnim({
     () => (points.length ? points : DEFAULT_POINTS).map(clampPoint),
     [points]
   )
+  const onForwardCompleteRef = useRef(onForwardComplete)
+  const onCompleteRef = useRef(onComplete)
+  const onPhaseChangeRef = useRef(onPhaseChange)
 
   const [currentIndex, setCurrentIndex] = useState(0)
   const [phase, setPhase] = useState('idle')
@@ -47,6 +53,86 @@ export default function NailPaintingAnim({
   const [success, setSuccess] = useState(false)
   const [pathVisible, setPathVisible] = useState(false)
   const [segment, setSegment] = useState(null)
+  const workDuration = WORK_SWINGS * SWING_MS
+  const paintingDuration = normalizedPoints.length * workDuration + Math.max(0, normalizedPoints.length - 1) * MOVE_MS
+  const sealingDuration = Math.max(0, normalizedPoints.length - 1) * MOVE_MS
+  const demoMotion = useMemo(() => {
+    if (!demoMode || !normalizedPoints.length) return null
+
+    const buildFrames = (sequence, includeWorkPause) => {
+      const total = includeWorkPause
+        ? sequence.length * workDuration + Math.max(0, sequence.length - 1) * MOVE_MS
+        : Math.max(0, sequence.length - 1) * MOVE_MS
+
+      if (total <= 0) {
+        const point = sequence[0] || DEFAULT_POINTS[0]
+        return `0% { left:${point.x * 100}%; top:${point.y * 100}%; } 100% { left:${point.x * 100}%; top:${point.y * 100}%; }`
+      }
+
+      let elapsed = 0
+      const frames = []
+
+      sequence.forEach((point, index) => {
+        const pointPct = (elapsed / total) * 100
+        frames.push(`${pointPct}% { left:${point.x * 100}%; top:${point.y * 100}%; }`)
+
+        if (includeWorkPause) {
+          elapsed += workDuration
+          const holdPct = (elapsed / total) * 100
+          frames.push(`${holdPct}% { left:${point.x * 100}%; top:${point.y * 100}%; }`)
+        }
+
+        if (index < sequence.length - 1) {
+          elapsed += MOVE_MS
+          const nextPoint = sequence[index + 1]
+          const movePct = (elapsed / total) * 100
+          frames.push(`${movePct}% { left:${nextPoint.x * 100}%; top:${nextPoint.y * 100}%; }`)
+        }
+      })
+
+      return frames.join('\n')
+    }
+
+    return {
+      paintingFrames: buildFrames(normalizedPoints, true),
+      sealingFrames: buildFrames([...normalizedPoints].reverse(), false),
+    }
+  }, [demoMode, normalizedPoints, workDuration])
+
+  useEffect(() => {
+    if (!demoMode || !active || !normalizedPoints.length) return
+
+    let timeoutId = null
+
+    if (stage === 'painting') {
+      onPhaseChangeRef.current?.('work')
+      timeoutId = window.setTimeout(() => {
+        onForwardCompleteRef.current?.()
+      }, paintingDuration)
+    } else if (stage === 'sealing') {
+      onPhaseChangeRef.current?.('return')
+      timeoutId = window.setTimeout(() => {
+        onPhaseChangeRef.current?.('done')
+        onCompleteRef.current?.()
+      }, sealingDuration)
+    }
+
+    return () => {
+      if (timeoutId) window.clearTimeout(timeoutId)
+    }
+  }, [active, demoMode, normalizedPoints.length, paintingDuration, sealingDuration, stage])
+
+  useEffect(() => {
+    onForwardCompleteRef.current = onForwardComplete
+  }, [onForwardComplete])
+
+  useEffect(() => {
+    onCompleteRef.current = onComplete
+  }, [onComplete])
+
+  useEffect(() => {
+    onPhaseChangeRef.current = onPhaseChange
+  }, [onPhaseChange])
 
   useEffect(() => {
     setCurrentIndex(0)
@@ -64,77 +150,119 @@ export default function NailPaintingAnim({
 
     let cancelled = false
 
+    const animateMove = (from, to, duration) => new Promise((resolve) => {
+      const start = performance.now()
+
+      const tick = (now) => {
+        if (cancelled) {
+          resolve()
+          return
+        }
+
+        const rawProgress = (now - start) / duration
+        const t = Math.max(0, Math.min(rawProgress, 1))
+        const eased = 1 - Math.pow(1 - t, 3)
+
+        setWorkerPos({
+          x: from.x + (to.x - from.x) * eased,
+          y: from.y + (to.y - from.y) * eased,
+        })
+
+        if (t < 1) {
+          requestAnimationFrame(tick)
+          return
+        }
+
+        setWorkerPos(to)
+        resolve()
+      }
+
+      requestAnimationFrame(tick)
+    })
+
     const run = async () => {
       setSuccess(false)
       setPathVisible(false)
-      setCurrentIndex(0)
-      setWorkerPos(normalizedPoints[0])
+      setSegment(null)
+
+      if (stage === 'painting') {
+        setCurrentIndex(0)
+        setWorkerPos(normalizedPoints[0])
+        setWorkerAngle(-12)
+        setFlipX(1)
+        onPhaseChangeRef.current?.('work')
+
+        for (let i = 0; i < normalizedPoints.length; i += 1) {
+          const point = normalizedPoints[i]
+          setCurrentIndex(i)
+          setWorkerPos(point)
+          setPhase('work')
+          onPhaseChangeRef.current?.('work')
+          setWorkerAngle(-16)
+          setSegment(null)
+
+          for (let swing = 0; swing < WORK_SWINGS; swing += 1) {
+            if (cancelled) return
+            const dir = swing % 2 === 0 ? 1 : -1
+            setFlipX(dir)
+            setWorkerAngle(dir > 0 ? 13 : -13)
+            await wait(SWING_MS)
+          }
+
+          if (i === normalizedPoints.length - 1) {
+            break
+          }
+
+          const nextPoint = normalizedPoints[i + 1]
+          setPhase('move')
+          onPhaseChangeRef.current?.('move')
+          setPathVisible(true)
+          setSegment({ from: point, to: nextPoint })
+          setFlipX(nextPoint.x >= point.x ? 1 : -1)
+          setWorkerAngle(segmentAngle(point, nextPoint) * 0.28)
+          await animateMove(point, nextPoint, MOVE_MS)
+          setPathVisible(false)
+        }
+
+        if (cancelled) return
+        setPhase('idle')
+        setPathVisible(false)
+        setSegment(null)
+        onForwardCompleteRef.current?.()
+        return
+      }
+
+      if (stage !== 'sealing') return
+
+      setCurrentIndex(normalizedPoints.length - 1)
+      setWorkerPos(normalizedPoints[normalizedPoints.length - 1])
       setWorkerAngle(-12)
       setFlipX(1)
-      onPhaseChange?.('work')
-
-      for (let i = 0; i < normalizedPoints.length; i += 1) {
-        const point = normalizedPoints[i]
-        setCurrentIndex(i)
-        setWorkerPos(point)
-        setPhase('work')
-        onPhaseChange?.('work')
-        setWorkerAngle(-16)
-        setSegment(null)
-
-        for (let swing = 0; swing < WORK_SWINGS; swing += 1) {
-          if (cancelled) return
-          const dir = swing % 2 === 0 ? 1 : -1
-          setFlipX(dir)
-          setWorkerAngle(dir > 0 ? 13 : -13)
-          await wait(SWING_MS)
-        }
-
-        if (i === normalizedPoints.length - 1) {
-          break
-        }
-
-        const nextPoint = normalizedPoints[i + 1]
-        setPhase('move')
-        onPhaseChange?.('move')
-        setPathVisible(true)
-        setSegment({ from: point, to: nextPoint })
-        setFlipX(nextPoint.x >= point.x ? 1 : -1)
-        setWorkerAngle(segmentAngle(point, nextPoint) * 0.28)
-        await wait(40)
-        if (cancelled) return
-        setWorkerPos(nextPoint)
-        await wait(MOVE_MS)
-        setPathVisible(false)
-      }
 
       for (let i = normalizedPoints.length - 1; i > 0; i -= 1) {
         if (cancelled) return
         const point = normalizedPoints[i]
         const prevPoint = normalizedPoints[i - 1]
         setPhase('return')
-        onPhaseChange?.('return')
+        onPhaseChangeRef.current?.('return')
         setPathVisible(true)
         setSegment({ from: point, to: prevPoint })
         setFlipX(prevPoint.x >= point.x ? 1 : -1)
         setWorkerAngle(segmentAngle(point, prevPoint) * 0.28)
-        await wait(40)
-        if (cancelled) return
-        setWorkerPos(prevPoint)
+        await animateMove(point, prevPoint, MOVE_MS)
         setCurrentIndex(i - 1)
-        await wait(MOVE_MS)
         setPathVisible(false)
         await wait(180)
       }
 
       if (cancelled) return
       setPhase('done')
-      onPhaseChange?.('done')
+      onPhaseChangeRef.current?.('done')
       setSuccess(true)
       setFlipX(1)
       setWorkerAngle(0)
       setSegment(null)
-      onComplete?.()
+      onCompleteRef.current?.()
     }
 
     run()
@@ -142,9 +270,77 @@ export default function NailPaintingAnim({
     return () => {
       cancelled = true
     }
-  }, [active, normalizedPoints, onComplete, onPhaseChange])
+  }, [active, normalizedPoints, stage])
 
   const isMoving = phase === 'move' || phase === 'return'
+
+  if (demoMode && demoMotion) {
+    const isSealing = stage === 'sealing'
+    const animationName = isSealing ? 'demoPotatoSealingPath' : 'demoPotatoPaintingPath'
+    const duration = isSealing ? sealingDuration : paintingDuration
+    const startPoint = isSealing
+      ? normalizedPoints[normalizedPoints.length - 1]
+      : normalizedPoints[0]
+
+    return (
+      <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 14, overflow: 'hidden' }}>
+        <style>{`
+          @keyframes demoPotatoPaintingPath {
+            ${demoMotion.paintingFrames}
+          }
+          @keyframes demoPotatoSealingPath {
+            ${demoMotion.sealingFrames}
+          }
+          @keyframes demoPotatoWobble {
+            0%, 100% { transform: rotate(-10deg) scaleX(1); }
+            25% { transform: rotate(12deg) scaleX(-1); }
+            50% { transform: rotate(-12deg) scaleX(1); }
+            75% { transform: rotate(10deg) scaleX(-1); }
+          }
+        `}</style>
+        <svg viewBox="0 0 100 100" preserveAspectRatio="none" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}>
+          {showDebugPoints && normalizedPoints.map((point, index) => (
+            <g key={`${point.x}-${point.y}-${index}`}>
+              <circle
+                cx={point.x * 100}
+                cy={point.y * 100}
+                r={1.9}
+                fill="rgba(255,255,255,0.88)"
+                stroke="rgba(160,98,201,0.5)"
+                strokeWidth={0.4}
+              />
+            </g>
+          ))}
+        </svg>
+        <div
+          style={{
+            position: 'absolute',
+            left: `${startPoint.x * 100}%`,
+            top: `${startPoint.y * 100}%`,
+            width: WORKER_SIZE,
+            height: WORKER_SIZE,
+            transform: 'translate(-50%, -50%)',
+            animation: `${animationName} ${duration}ms linear forwards`,
+            zIndex: 16,
+            filter: 'drop-shadow(0 8px 18px rgba(0, 0, 0, 0.18))',
+          }}
+        >
+          <img
+            src={workerSrc}
+            alt=""
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'contain',
+              display: 'block',
+              transformOrigin: 'center center',
+              animation: `demoPotatoWobble ${Math.max(600, workDuration)}ms ease-in-out infinite`,
+            }}
+          />
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 14, overflow: 'hidden' }}>
@@ -198,9 +394,7 @@ export default function NailPaintingAnim({
           height: WORKER_SIZE,
           transformOrigin: 'center center',
           transform: `translate(-50%, -50%) rotate(${workerAngle}deg) scaleX(${flipX})`,
-          transition: isMoving
-            ? `left ${MOVE_MS}ms cubic-bezier(0.33, 1, 0.68, 1), top ${MOVE_MS}ms cubic-bezier(0.33, 1, 0.68, 1), transform 260ms ease`
-            : 'transform 180ms ease, left 120ms ease, top 120ms ease',
+          transition: 'transform 180ms ease',
           zIndex: 16,
           filter: success ? 'drop-shadow(0 0 16px rgba(160, 98, 201, 0.36))' : 'drop-shadow(0 8px 18px rgba(0, 0, 0, 0.18))',
         }}
@@ -220,3 +414,5 @@ export default function NailPaintingAnim({
     </div>
   )
 }
+
+export default memo(NailPaintingAnim)

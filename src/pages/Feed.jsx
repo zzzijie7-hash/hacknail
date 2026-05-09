@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { Colors, Type } from '../config/design'
+import { apiUrl } from '../lib/api'
 
 const TAG_MAP = { nail: '#美甲分享', pet: '#毛孩子日常', rental: '#租房日记', portrait: '#写真约拍' }
 
@@ -104,7 +105,7 @@ const PORTRAIT_TITLES = [
 
 async function loadPostPools() {
   try {
-    const r = await fetch('/api/manifest?t=' + Date.now())
+    const r = await fetch(apiUrl(`/manifest?t=${Date.now()}`))
     return await r.json()
   } catch {
     return null

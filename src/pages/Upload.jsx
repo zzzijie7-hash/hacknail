@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
+import { apiUrl } from '../lib/api'
 
 const CATEGORIES = [
   { key: 'nail', label: '美甲', icon: '💅' },
@@ -33,7 +34,7 @@ export default function UploadPage({ onBack }) {
     fd.append('category', category)
     files.forEach(f => fd.append('files', f))
     try {
-      const r = await fetch('/api/upload', { method: 'POST', body: fd })
+      const r = await fetch(apiUrl('/upload'), { method: 'POST', body: fd })
       const d = await r.json()
       setDone(d)
       setFiles([])

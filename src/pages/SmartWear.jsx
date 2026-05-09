@@ -1,8 +1,9 @@
-import { useState, useRef, useEffect, useMemo } from 'react'
+import { memo, useState, useRef, useEffect, useMemo, useCallback } from 'react'
 import NailLibraryPanel from '../components/NailLibraryPanel'
 import NailPaintingAnim from '../components/NailPaintingAnim'
 import ShapeSelector from '../components/ShapeSelector'
 import { loadLibrary, saveLibrary } from '../utils/nailLibrary'
+import { apiUrl } from '../lib/api'
 
 const SHAPE_BUBBLES = {
   almond: '杏仁甲，适合肉肉手，能视觉拉长手指～',
@@ -43,6 +44,9 @@ const DETECTING_DOTS = [
   { x: 0.57, y: 0.64, size: 8, delay: 480 },
   { x: 0.78, y: 0.6, size: 5, delay: 300 },
 ]
+const MOCK_DEMO_WORK_MS = 800
+const MOCK_DEMO_MOVE_MS = 1200
+const MIN_REAL_DETECT_MS = 1200
 
 function buildHandStickerBounds(points) {
   if (!points?.length) {
@@ -104,6 +108,141 @@ function readFileAsDataUrl(file) {
   })
 }
 
+const MockDemoOverlay = memo(function MockDemoOverlay({ visible, stage, points, workerSrc = '/icons/worker-potato.png' }) {
+  const normalizedPoints = useMemo(() => (points?.length ? points : DEMO_NAIL_POINTS), [points])
+  const paintingDuration = useMemo(
+    () => normalizedPoints.length * MOCK_DEMO_WORK_MS + Math.max(0, normalizedPoints.length - 1) * MOCK_DEMO_MOVE_MS,
+    [normalizedPoints]
+  )
+  const sealingDuration = useMemo(
+    () => Math.max(0, normalizedPoints.length - 1) * MOCK_DEMO_MOVE_MS,
+    [normalizedPoints]
+  )
+  const pathFrames = useMemo(() => {
+    if (!normalizedPoints.length) return ''
+    const total = Math.max(1, paintingDuration)
+    let elapsed = 0
+    const frames = []
+    normalizedPoints.forEach((point, index) => {
+      const startPct = (elapsed / total) * 100
+      frames.push(`${startPct}% { left:${point.x * 100}%; top:${point.y * 100}%; }`)
+      elapsed += MOCK_DEMO_WORK_MS
+      const holdPct = (elapsed / total) * 100
+      frames.push(`${holdPct}% { left:${point.x * 100}%; top:${point.y * 100}%; }`)
+      if (index < normalizedPoints.length - 1) {
+        const nextPoint = normalizedPoints[index + 1]
+        elapsed += MOCK_DEMO_MOVE_MS
+        const movePct = (elapsed / total) * 100
+        frames.push(`${movePct}% { left:${nextPoint.x * 100}%; top:${nextPoint.y * 100}%; }`)
+      }
+    })
+    return frames.join('\n')
+  }, [normalizedPoints, paintingDuration])
+
+  const sealingFrames = useMemo(() => {
+    if (!normalizedPoints.length) return ''
+    const reversed = [...normalizedPoints].reverse()
+    const total = Math.max(1, sealingDuration)
+    let elapsed = 0
+    const frames = []
+    reversed.forEach((point, index) => {
+      const startPct = (elapsed / total) * 100
+      frames.push(`${startPct}% { left:${point.x * 100}%; top:${point.y * 100}%; }`)
+      if (index < reversed.length - 1) {
+        const nextPoint = reversed[index + 1]
+        elapsed += MOCK_DEMO_MOVE_MS
+        const movePct = (elapsed / total) * 100
+        frames.push(`${movePct}% { left:${nextPoint.x * 100}%; top:${nextPoint.y * 100}%; }`)
+      }
+    })
+    return frames.join('\n')
+  }, [normalizedPoints, sealingDuration])
+  const wobbleFrames = useMemo(() => {
+    if (!normalizedPoints.length) return ''
+    const total = Math.max(1, paintingDuration)
+    let elapsed = 0
+    const frames = ['0% { transform: rotate(-10deg) scaleX(1); }']
+    normalizedPoints.forEach((_, index) => {
+      const q1 = ((elapsed + MOCK_DEMO_WORK_MS * 0.25) / total) * 100
+      const q2 = ((elapsed + MOCK_DEMO_WORK_MS * 0.5) / total) * 100
+      const q3 = ((elapsed + MOCK_DEMO_WORK_MS * 0.75) / total) * 100
+      const q4 = ((elapsed + MOCK_DEMO_WORK_MS) / total) * 100
+      frames.push(`${q1}% { transform: rotate(12deg) scaleX(-1); }`)
+      frames.push(`${q2}% { transform: rotate(-12deg) scaleX(1); }`)
+      frames.push(`${q3}% { transform: rotate(10deg) scaleX(-1); }`)
+      frames.push(`${q4}% { transform: rotate(-10deg) scaleX(1); }`)
+      elapsed += MOCK_DEMO_WORK_MS
+      if (index < normalizedPoints.length - 1) {
+        const movePct = ((elapsed + MOCK_DEMO_MOVE_MS) / total) * 100
+        frames.push(`${movePct}% { transform: rotate(0deg) scaleX(1); }`)
+        elapsed += MOCK_DEMO_MOVE_MS
+      }
+    })
+    frames.push('100% { transform: rotate(0deg) scaleX(1); }')
+    return frames.join('\n')
+  }, [normalizedPoints, paintingDuration])
+
+  if (!visible || !normalizedPoints.length) return null
+
+  const firstPoint = normalizedPoints[0]
+  const lastPoint = normalizedPoints[normalizedPoints.length - 1]
+  const isSealing = stage === 'sealing'
+
+  return (
+    <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 14, overflow: 'hidden' }}>
+      <style>{`
+        @keyframes mockPathWalk {
+          ${pathFrames}
+        }
+        @keyframes mockSealingWalk {
+          ${sealingFrames}
+        }
+        @keyframes mockPointWobble {
+          ${wobbleFrames}
+        }
+      `}</style>
+      <svg viewBox="0 0 100 100" preserveAspectRatio="none" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}>
+        {normalizedPoints.map((point, index) => (
+          <circle
+            key={`${point.x}-${point.y}-${index}`}
+            cx={point.x * 100}
+            cy={point.y * 100}
+            r={1.9}
+            fill="rgba(255,255,255,0.88)"
+            stroke="rgba(160,98,201,0.5)"
+            strokeWidth={0.4}
+          />
+        ))}
+      </svg>
+      <div
+        style={{
+          position: 'absolute',
+          left: `${(isSealing ? lastPoint : firstPoint).x * 100}%`,
+          top: `${(isSealing ? lastPoint : firstPoint).y * 100}%`,
+          width: 64,
+          height: 64,
+          animation: `${isSealing ? 'mockSealingWalk' : 'mockPathWalk'} ${isSealing ? sealingDuration : paintingDuration}ms linear forwards`,
+          zIndex: 16,
+          filter: 'drop-shadow(0 8px 18px rgba(0, 0, 0, 0.18))',
+        }}
+      >
+        <img
+          src={workerSrc}
+          alt=""
+          style={{
+            width: '100%',
+            height: '100%',
+            objectFit: 'contain',
+            display: 'block',
+            transformOrigin: 'center center',
+            animation: isSealing ? 'none' : `mockPointWobble ${paintingDuration}ms linear forwards`,
+          }}
+        />
+      </div>
+    </div>
+  )
+})
+
 export default function SmartWear({
   onBack, onBuySimilar, onFindShops, onUpload,
   initialNails, nailStyle, onNailStyleChange,
@@ -128,14 +267,30 @@ export default function SmartWear({
   const [resultNotice, setResultNotice] = useState('')
   const [demoPreviewActive, setDemoPreviewActive] = useState(false)
   const [paintingPhase, setPaintingPhase] = useState('idle')
+  const [generationStage, setGenerationStage] = useState('idle')
   const inputRef = useRef()
   const cameraRef = useRef()
   const cameraPreviewRef = useRef(null)
   const cameraStreamRef = useRef(null)
   const analyzePromiseRef = useRef(null)
   const handPreviewUrlRef = useRef(null)
+  const mockFlowActiveRef = useRef(false)
+  const mockDetectTimerRef = useRef(null)
+  const mockPaintingTimerRef = useRef(null)
+  const mockSealingTimerRef = useRef(null)
+  const mockProgressTimerRef = useRef(null)
+  const mockResultTimerRef = useRef(null)
+  const realProgressTimerRef = useRef(null)
+  const detectStageTimerRef = useRef(null)
+  const paintingPhaseRef = useRef('idle')
+  const generationStageRef = useRef('idle')
+  const pendingGeneratedImageRef = useRef(null)
+  const generationStartAtRef = useRef(0)
+  const sealingMotionDoneRef = useRef(false)
 
   useEffect(() => { if (result) setMode('result') }, [result])
+  useEffect(() => { paintingPhaseRef.current = paintingPhase }, [paintingPhase])
+  useEffect(() => { generationStageRef.current = generationStage }, [generationStage])
 
   const groupImages = useMemo(() => {
     if (!nailStyle?.groupId) return nailStyle ? [nailStyle] : []
@@ -256,6 +411,7 @@ export default function SmartWear({
       setHandOutline([])
       setAnalyzeState('idle')
       setDetectProgress(0)
+      setGenerationStage('idle')
       analyzePromiseRef.current = null
       return
     }
@@ -269,7 +425,7 @@ export default function SmartWear({
       form.append('hand', handFile)
 
       try {
-        const resp = await fetch('/api/analyze-hand', { method: 'POST', body: form })
+        const resp = await fetch(apiUrl('/analyze-hand'), { method: 'POST', body: form })
         const data = await resp.json()
         if (!resp.ok) throw new Error(data.detail || '手部检测失败')
 
@@ -316,6 +472,32 @@ export default function SmartWear({
     return () => window.clearInterval(interval)
   }, [mode, analyzeState])
 
+  useEffect(() => {
+    if (mode !== 'generating' || demoPreviewActive) return
+    if (generationStage !== 'detecting') return
+    if (analyzeState !== 'detected' && analyzeState !== 'fallback') return
+
+    if (detectStageTimerRef.current) {
+      window.clearTimeout(detectStageTimerRef.current)
+      detectStageTimerRef.current = null
+    }
+
+    const elapsed = Date.now() - generationStartAtRef.current
+    const remaining = Math.max(0, MIN_REAL_DETECT_MS - elapsed)
+    detectStageTimerRef.current = window.setTimeout(() => {
+      if (generationStageRef.current === 'detecting') {
+        setGenerationStage('painting')
+      }
+    }, remaining)
+
+    return () => {
+      if (detectStageTimerRef.current) {
+        window.clearTimeout(detectStageTimerRef.current)
+        detectStageTimerRef.current = null
+      }
+    }
+  }, [analyzeState, demoPreviewActive, generationStage, mode])
+
   const frameImg = mode === 'generating' ? '/icons/frame-generating.png'
     : mode === 'result' ? '/icons/frame-after.png'
     : '/icons/frame-before.png'
@@ -347,6 +529,24 @@ export default function SmartWear({
     }
   }, [bubbleTargetText])
 
+  const revealGeneratedResult = useCallback((image) => {
+    if (!image) return
+    if (realProgressTimerRef.current) {
+      window.clearInterval(realProgressTimerRef.current)
+      realProgressTimerRef.current = null
+    }
+    if (detectStageTimerRef.current) {
+      window.clearTimeout(detectStageTimerRef.current)
+      detectStageTimerRef.current = null
+    }
+    pendingGeneratedImageRef.current = null
+    sealingMotionDoneRef.current = false
+    onProgressChange?.(100)
+    setGenerationStage('idle')
+    onResultChange?.(image)
+    onLoadingChange?.(false)
+  }, [onLoadingChange, onProgressChange, onResultChange])
+
   const startGenerate = async (forcedProvider = 'openai', forcedShape = selectedShape) => {
     if (!handFile || !curNail) return
     if (!handPreviewUrlRef.current && !hpUrl) {
@@ -358,9 +558,24 @@ export default function SmartWear({
         console.warn('[startGenerate preview rebuild failed]', e)
       }
     }
+    pendingGeneratedImageRef.current = null
+    sealingMotionDoneRef.current = false
+    generationStartAtRef.current = Date.now()
+    setPaintingPhase('idle')
+    setGenerationStage('detecting')
     onLoadingChange?.(true); setError(null); setResultNotice(''); onResultChange?.(null); onProgressChange?.(0); setMode('generating')
-    let prog = 0
-    const iv = setInterval(() => { prog = Math.min(prog + Math.random() * 8, 90); onProgressChange?.(prog) }, 800)
+    let prog = 6
+    onProgressChange?.(prog)
+    if (realProgressTimerRef.current) {
+      window.clearInterval(realProgressTimerRef.current)
+      realProgressTimerRef.current = null
+    }
+    realProgressTimerRef.current = window.setInterval(() => {
+      const currentStage = generationStageRef.current
+      const maxProgress = currentStage === 'detecting' ? 24 : currentStage === 'painting' ? 88 : 97
+      prog = Math.min(prog + Math.random() * 6 + 3, maxProgress)
+      onProgressChange?.(prog)
+    }, 700)
     const form = new FormData()
     form.append('hand', handFile); form.append('provider', forcedProvider || 'openai'); form.append('nail_shape', forcedShape)
     if (curNail.src.startsWith('data:')) {
@@ -368,9 +583,12 @@ export default function SmartWear({
       form.append('nail', new Blob([Uint8Array.from(atob(arr[1]), c => c.charCodeAt(0))], { type: mime }), 'nail.jpg')
     } else form.append('nail_url', curNail.src)
     try {
-      const r = await fetch('/api/cyber-nails', { method: 'POST', body: form })
+      const r = await fetch(apiUrl('/cyber-nails'), { method: 'POST', body: form })
       const d = await r.json(); if (!r.ok) throw new Error(d.detail || '生成失败')
-      onResultChange?.(d.image); onProgressChange?.(100)
+      pendingGeneratedImageRef.current = d.image
+      if (generationStageRef.current === 'sealing' && sealingMotionDoneRef.current) {
+        revealGeneratedResult(d.image)
+      }
     } catch (e) {
       const fallbackMessage = e.message?.includes('token')
         ? '后端模型token用尽，为您演示模拟效果'
@@ -379,43 +597,96 @@ export default function SmartWear({
       await mockGenerate(fallbackMessage)
       return
     }
-    finally { clearInterval(iv); setTimeout(() => onLoadingChange?.(false), 500) }
   }
 
   const mockGenerate = async (notice = '模拟生成效果') => {
+    mockFlowActiveRef.current = true
+    pendingGeneratedImageRef.current = null
     handPreviewUrlRef.current = DEMO_BEFORE_IMAGE
     setHpUrl(DEMO_BEFORE_IMAGE)
     setDemoPreviewActive(true)
     setNailPoints(DEMO_NAIL_POINTS)
     setHandOutline([])
-    setAnalyzeState('detected')
-    setDetectProgress(100)
-    setPaintingPhase('work')
+    setAnalyzeState('loading')
+    setDetectProgress(8)
+    setPaintingPhase('idle')
+    setGenerationStage('detecting')
     onLoadingChange?.(true); setError(null); setResultNotice(notice); onResultChange?.(null); onProgressChange?.(0); setMode('generating')
 
-    let pg = 14
+    let pg = 10
     onProgressChange?.(pg)
-    const iv = window.setInterval(() => {
-      const maxDuringPainting = paintingPhase === 'return' ? 97 : 88
+    if (mockProgressTimerRef.current) window.clearInterval(mockProgressTimerRef.current)
+    mockProgressTimerRef.current = window.setInterval(() => {
+      const maxDuringPainting = paintingPhaseRef.current === 'return' ? 97 : 88
       pg = Math.min(pg + Math.random() * 8 + 5, maxDuringPainting)
       onProgressChange?.(pg)
     }, 700)
 
-    const finishTimer = window.setTimeout(() => {
-      window.clearInterval(iv)
+    if (mockDetectTimerRef.current) window.clearTimeout(mockDetectTimerRef.current)
+    mockDetectTimerRef.current = window.setTimeout(() => {
+      setAnalyzeState('detected')
+      setDetectProgress(100)
+      setPaintingPhase('work')
+      setGenerationStage('painting')
+      onProgressChange?.(22)
+    }, 1800)
+
+    if (mockPaintingTimerRef.current) window.clearTimeout(mockPaintingTimerRef.current)
+    mockPaintingTimerRef.current = window.setTimeout(() => {
+      setPaintingPhase('return')
+      setGenerationStage('sealing')
+    }, 13800)
+
+    if (mockSealingTimerRef.current) window.clearTimeout(mockSealingTimerRef.current)
+    mockSealingTimerRef.current = window.setTimeout(() => {
+      if (mockProgressTimerRef.current) {
+        window.clearInterval(mockProgressTimerRef.current)
+        mockProgressTimerRef.current = null
+      }
+      mockFlowActiveRef.current = false
       onProgressChange?.(100)
-      setPaintingPhase('done')
+      setGenerationStage('idle')
       onResultChange?.(DEMO_AFTER_IMAGE)
       onLoadingChange?.(false)
-    }, 15000)
+    }, 18800)
 
-    return () => {
-      window.clearInterval(iv)
-      window.clearTimeout(finishTimer)
+    if (mockResultTimerRef.current) {
+      window.clearTimeout(mockResultTimerRef.current)
+      mockResultTimerRef.current = null
     }
   }
 
   const reset = () => {
+    mockFlowActiveRef.current = false
+    if (realProgressTimerRef.current) {
+      window.clearInterval(realProgressTimerRef.current)
+      realProgressTimerRef.current = null
+    }
+    if (detectStageTimerRef.current) {
+      window.clearTimeout(detectStageTimerRef.current)
+      detectStageTimerRef.current = null
+    }
+    if (mockDetectTimerRef.current) {
+      window.clearTimeout(mockDetectTimerRef.current)
+      mockDetectTimerRef.current = null
+    }
+    if (mockPaintingTimerRef.current) {
+      window.clearTimeout(mockPaintingTimerRef.current)
+      mockPaintingTimerRef.current = null
+    }
+    if (mockSealingTimerRef.current) {
+      window.clearTimeout(mockSealingTimerRef.current)
+      mockSealingTimerRef.current = null
+    }
+    if (mockProgressTimerRef.current) {
+      window.clearInterval(mockProgressTimerRef.current)
+      mockProgressTimerRef.current = null
+    }
+    if (mockResultTimerRef.current) {
+      window.clearTimeout(mockResultTimerRef.current)
+      mockResultTimerRef.current = null
+    }
+    pendingGeneratedImageRef.current = null
     onResultChange?.(null)
     onHandFileChange?.(null)
     onProgressChange?.(0)
@@ -423,6 +694,7 @@ export default function SmartWear({
     setResultNotice('')
     setDemoPreviewActive(false)
     setPaintingPhase('idle')
+    setGenerationStage('idle')
     setHpUrl(null)
     handPreviewUrlRef.current = null
     setMode('capture')
@@ -435,6 +707,25 @@ export default function SmartWear({
       startGenerate(undefined, shape)
     }
   }
+
+  const handlePaintingPhaseChange = useCallback((phase) => {
+    setPaintingPhase(phase)
+  }, [])
+
+  const handlePaintingForwardComplete = useCallback(() => {
+    if (demoPreviewActive) {
+      return
+    }
+    setGenerationStage('sealing')
+  }, [demoPreviewActive])
+
+  const handlePaintingComplete = useCallback(() => {
+    if (demoPreviewActive) return
+    sealingMotionDoneRef.current = true
+    if (pendingGeneratedImageRef.current) {
+      revealGeneratedResult(pendingGeneratedImageRef.current)
+    }
+  }, [demoPreviewActive, revealGeneratedResult])
 
   const SimulateButton = (mode === 'capture' || mode === 'confirm') ? (
     <button
@@ -579,7 +870,7 @@ export default function SmartWear({
         <span style={{ fontSize: 10, fontWeight: 500, color: 'rgba(255,255,255,0.5)', lineHeight: '14px' }}>
           {analyzeState === 'loading'
             ? `正在识别指节位置，进度${Math.round(detectProgress)}%`
-            : paintingPhase === 'return' || progress >= 92
+            : generationStage === 'sealing' || paintingPhase === 'return' || progress >= 92
               ? '绘制完毕，正在为您做最后的封层，请耐心等待'
               : `识别完毕，正在逐步为你绘制，还剩${Math.max(1, Math.round((100 - (progress || 0)) / 10))} s`}
         </span>
@@ -598,7 +889,7 @@ export default function SmartWear({
     </div>
   )
 
-  const shouldShowDetectOverlay = mode === 'generating' && analyzeState !== 'detected' && analyzeState !== 'fallback'
+  const shouldShowDetectOverlay = mode === 'generating' && generationStage === 'detecting'
 
   const DetectingOverlay = shouldShowDetectOverlay ? (
     <div style={{ position: 'absolute', inset: 0, zIndex: 24, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, background: 'rgba(0,0,0,0.26)', backdropFilter: 'blur(2px)', WebkitBackdropFilter: 'blur(2px)' }}>
@@ -682,8 +973,11 @@ export default function SmartWear({
               ) : (
                 <div style={{ position: 'absolute', inset: 0, background: '#161616' }} />
               )}
-              {analyzeState === 'detected' || analyzeState === 'fallback'
-                ? <NailPaintingAnim points={nailPoints} active={mode === 'generating'} workerSrc="/icons/worker-potato.png" showDebugPoints={analyzeState === 'detected'} onPhaseChange={setPaintingPhase} />
+              {demoPreviewActive && (generationStage === 'painting' || generationStage === 'sealing')
+                ? <MockDemoOverlay visible stage={generationStage} points={nailPoints} />
+                : null}
+              {!demoPreviewActive && (generationStage === 'painting' || generationStage === 'sealing')
+                ? <NailPaintingAnim points={nailPoints} active={mode === 'generating'} stage={generationStage === 'sealing' ? 'sealing' : 'painting'} workerSrc="/icons/worker-potato.png" showDebugPoints={analyzeState === 'detected'} onPhaseChange={handlePaintingPhaseChange} onForwardComplete={handlePaintingForwardComplete} onComplete={handlePaintingComplete} />
                 : null}
               {DetectingOverlay}
             </Viewfinder>

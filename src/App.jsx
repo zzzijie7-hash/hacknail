@@ -10,6 +10,7 @@ import ProductDetail from './pages/ProductDetail'
 import Shops from './pages/Shops'
 import Chat from './pages/Chat'
 import AIChat from './pages/AIChat'
+import { apiUrl } from './lib/api'
 
 export default function App() {
   const [page, setPage] = useState('feed')
@@ -41,7 +42,7 @@ export default function App() {
   const changeProvider = (p) => {
     setProvider(p)
     localStorage.setItem('cybernail_provider', p)
-    fetch('/api/set-provider', {
+    fetch(apiUrl('/set-provider'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ provider: p }),
